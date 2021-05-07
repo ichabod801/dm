@@ -115,16 +115,42 @@ class Egor(cmd.Cmd):
 		print(eval(arguments))
 
 	def do_srd(self, arguments):
-		"""Search the Source Resource Document."""
+		"""
+		Search the Source Resource Document.
+
+		The arguments are the terms you want to search by. If you just give some text,
+		Egor tries to find that text with a case insensitive search. If you preced the
+		terms with a $, it treats the rest of the argument as a regular expression, 
+		and searches for that.
+
+		Currently Egor only knows how to search for headers.
+		"""
+		# Search by regex or text as indicated.
 		if arguments.startswith('$'):
 			regex = re.compile(arguments[1:], re.IGNORECASE)
 			matches = self.srd.header_search(regex)
 		else:
 			matches = self.srd.header_search(arguments)
 		if matches:
-			for match in matches:
-				print(match.full_header())
+			# If necessary, get the player's choice of matches.
+			if len(matches) == 1:
+				match = matches[0]
+			else:
+				for match_index, match in enumerate(matches, start = 1):
+					print(f'{match_index}: {match.full_header()}')
+				choice = input('\nWhich section would you like to view (return for none)? ')
+			# Validate the choice.
+			if choice:
+				try:
+					match = matches[int(match_index) - 1]
+				except (ValueError, IndexError):
+					print('\nInvalid choice.')
+				else:
+					# Print the chosen section.
+					print()
+					print(match.full_text())
 		else:
+			# Warn the user if there are no matches.
 			print('No matches found.')
 
 	def onecmd(self, line):

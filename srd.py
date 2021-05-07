@@ -19,6 +19,7 @@ class Node(object):
 
 	Methods:
 	add_child: Add a child node to the tree. (None)
+	full_text: Get the full text of the header and it's children. (str)
 
 	Overridden Methods:
 	__init__
@@ -38,6 +39,12 @@ class Node(object):
 		"""
 		self.children.append(node)
 		node.parent = self
+
+	def full_text(self):
+		"""Get the full text of the header and it's children. (str)"""
+		parts = [str(self)]
+		parts.extend(child.full_text() for child in self.children)
+		return '\n\n'.join(parts)
 
 class HeaderNode(Node):
 	"""

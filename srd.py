@@ -57,6 +57,7 @@ class HeaderNode(Node):
 	Methods:
 	full_header: Full location of the header in the chapter. (str)
 	header_search: Search the children's headers for matches. (list of HeaderNode)
+	text_search: Search the children's text for matches. (list of HeaderNode)
 
 	Overridden Methods:
 	__init__
@@ -114,6 +115,28 @@ class HeaderNode(Node):
 		# Return the results.
 		return matches
 
+	def text_search(self, terms):
+		"""
+		Search the children's text for matches. (list of HeaderNode)
+
+		Parameters:
+		terms: The terms to search for. (Pattern or str)
+		"""
+		# Get the headers by type.
+		sub_heads, texts = [], []
+		for child in self.children:
+			if isinstance(child, HeaderNode):
+				sub_heads.append(child)
+			else:
+				texts.append(child)
+		# Search any text children.
+		matches = [child for child in texts if child.text_search(terms)]
+		# Continue the search depth first.
+		for child in sub_heads:
+			matches.extend(child.text_search(terms))
+		# Return the results.
+		return matches
+
 class TextNode(Node):
 	"""
 	A section of text in a document tree. (object)
@@ -123,7 +146,9 @@ class TextNode(Node):
 
 	Methods:
 	add_line: Add another line of text to the section. (None)
+	full_header: Full location of the section in the chapter. (str)
 	strip: Remove leading and trailing blank lines. (None)
+	text_search: Search the text lines for matches. (bool)
 
 	Overridden Methods:
 	__init__
@@ -158,12 +183,29 @@ class TextNode(Node):
 		"""
 		self.lines.append(text)
 
+	def full_header(self):
+		"""Full location of the section in the chapter. (str)"""
+		# Use the parent header.
+		return self.parent.full_header()
+
 	def strip(self):
 		"""Remove leading and trailing blank lines. (None)"""
 		while not self.lines[0].strip():
 			self.lines.pop(0)
 		while not self.lines[-1].strip():
 			self.lines.pop()
+
+	def text_search(self, terms):
+		"""
+		Search the text lines for matches. (bool)
+
+		Parameters:
+		terms: The terms to search for. (Pattern or str)
+		"""
+		for line in self.lines:
+			if terms.search(line):
+				return True
+		return False
 
 class SRD(object):
 	"""
@@ -176,6 +218,7 @@ class SRD(object):
 	header_search: Search the chapters' headers for matches. (list of HeaderNode)
 	parse_file: Parse a markdown file from the SRD. (None)
 	read_files: Read the files of the SRD. (dict of str:str)
+	text_search: Search the children's text for matches. (list of HeaderNode)
 
 	Overridden Methods:
 	__init__
@@ -262,6 +305,19 @@ class SRD(object):
 			with open(f'{folder}/{file_name}.md') as srd_file:
 				chapters[file_name[3:]] = srd_file.read().split('\n')
 		return chapters
+
+	def text_search(self, terms):
+		"""
+		Search the children's text for matches. (list of HeaderNode)
+
+		Parameters:
+		terms: The terms to search for. (Pattern or str)
+		"""
+		# Do the header search on each chapter.
+		matches = []
+		for chapter in self.chapters.values():
+			matches.extend(chapter.text_search(terms))
+		return matches
 
 if __name__ == '__main__':
 	srd = SRD()

@@ -129,12 +129,15 @@ class Egor(cmd.Cmd):
 		if arguments.startswith('$'):
 			regex = re.compile(arguments[1:], re.IGNORECASE)
 			matches = self.srd.header_search(regex)
+		elif arguments.startswith('+'):
+			regex = re.compile(arguments[1:], re.IGNORECASE)
+			matches = self.srd.text_search(regex)
 		else:
 			matches = self.srd.header_search(arguments)
 		if matches:
 			# If necessary, get the player's choice of matches.
 			if len(matches) == 1:
-				match = matches[0]
+				choice = '1'
 			else:
 				for match_index, match in enumerate(matches, start = 1):
 					print(f'{match_index}: {match.full_header()}')
@@ -142,7 +145,7 @@ class Egor(cmd.Cmd):
 			# Validate the choice.
 			if choice:
 				try:
-					match = matches[int(match_index) - 1]
+					match = matches[int(choice) - 1]
 				except (ValueError, IndexError):
 					print('\nInvalid choice.')
 				else:

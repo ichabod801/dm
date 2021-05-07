@@ -49,6 +49,7 @@ class HeaderNode(Node):
 
 	Methods:
 	full_header: Full location of the header in the chapter. (str)
+	header_search: Search the children's headers for matches. (list of HeaderNode)
 
 	Overridden Methods:
 	__init__
@@ -85,6 +86,26 @@ class HeaderNode(Node):
 			text = f'{parent.name} > {text}'
 			parent = parent.parent
 		return text
+
+	def header_search(self, terms):
+		"""
+		Search the children's headers for matches. (list of HeaderNode)
+
+		Parameters:
+		terms: The terms to search for. (Pattern or str)
+		"""
+		# Get the subheaders.
+		sub_heads = [child for child in self.children if isinstance(child, HeaderNode)]
+		# Search based on regular expression or text
+		if isinstance(terms, str):
+			matches = [child for child in sub_heads if terms == child.name.lower()]
+		else:
+			matches = [child for child in sub_heads if terms.search(child.name)]
+		# Continue the search depth first.
+		for child in sub_heads:
+			matches.extend(child.header_search(terms))
+		# Return the results.
+		return matches
 
 class TextNode(Node):
 	"""
@@ -145,6 +166,7 @@ class SRD(object):
 	file_names: The names of the SRD files. (list of str)
 
 	Methods:
+	header_search: Search the chapters' headers for matches. (list of HeaderNode)
 	parse_file: Parse a markdown file from the SRD. (None)
 	read_files: Read the files of the SRD. (dict of str:str)
 
@@ -167,6 +189,19 @@ class SRD(object):
 		self.headers = collections.defaultdict(list)
 		for name, lines in self.read_files(folder).items():
 			self.chapters[name] = self.parse_file(lines)
+
+	def header_search(self, terms):
+		"""
+		Search the children's headers for matches. (list of HeaderNode)
+
+		Parameters:
+		terms: The terms to search for. (Pattern or str)
+		"""
+		# Do the header search on each chapter.
+		matches = []
+		for chapter in self.chapters.values():
+			matches.extend(chapter.header_search(terms))
+		return matches
 
 	def parse_file(self, lines):
 		"""

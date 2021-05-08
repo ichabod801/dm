@@ -15,6 +15,7 @@ import re
 import textwrap
 import traceback
 
+import dice
 import srd
 
 HELP_GENERAL = """
@@ -42,7 +43,7 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'q': 'quit'}
+	aliases = {'q': 'quit', 'r': 'roll'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
@@ -58,6 +59,8 @@ class Egor(cmd.Cmd):
 		if words[0] in self.aliases:
 			words[0] = self.aliases[words[0]]
 			return self.onecmd(' '.join(words))
+		elif dice.DICE_REGEX.search(line):
+			self.do_roll(line)
 		else:
 			return super().default(line)
 
@@ -109,6 +112,30 @@ class Egor(cmd.Cmd):
 	def do_quit(self, arguments):
 		"""Say goodbye to Egor."""
 		return True
+
+	def do_roll(self, arguments):
+		"""
+		Roll some dice. (r)
+
+		The standard way to define a roll is nds, where n is the number of dice, and s
+		is the number of sides each die has. So 3d6 rolls three six-sided dice. The n
+		can be omitted if n = 1. So d20 rolls one twenty-sided die.
+
+		You can end a roll specification with khm to keep the m highest dice, or klm 
+		to keep the m lowest dice. So 2d20kl1 rolls two twenty-sided dice and keeps 
+		the lowest one.
+
+		You can start a roll specification with rx to repeat the roll r times. So
+		6x3d6 rolls 3d6 six times. 6x4d6kh3 would be the standard way of rolling 
+		ability scores.
+
+		Note that you can type in a roll specification without the roll command and 
+		Egor will still roll the dice. Egor likes rolling dice.
+		"""
+		try:
+			print(dice.roll(arguments))
+		except AttributeError:
+			print("I don't know how to roll that, master.")
 
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""

@@ -17,6 +17,7 @@ import traceback
 
 import dice
 import srd
+import gtime
 
 HELP_GENERAL = """
 There is no functionality, so there is no help.
@@ -43,7 +44,7 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'q': 'quit', 'r': 'roll'}
+	aliases = {'q': 'quit', 'r': 'roll', 't': 'time'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
@@ -183,6 +184,42 @@ class Egor(cmd.Cmd):
 			# Warn the user if there are no matches.
 			print('No matches found.')
 
+	def do_time(self, arguments):
+		"""
+		Update the current game time. (t)
+
+		Time can be specified as minutes, or has hour:minute. It is added to the
+		current time, which is then displayed.
+
+		The time specification can be preceded with 'set' or '=' to set the time
+		to a value, rather than adding that value to the current time. You must
+		put a space before the time value.
+
+		With no arguments, this just displays the current time.
+		"""
+		# parse the arguments.
+		words = arguments.split()
+		if words:
+			if words[0].lower() in ('set', '='):
+				time_spec = words[1]
+				reset = True
+			else:
+				time_spec = words[0]
+				reset = False
+			# Get the time.
+			try:
+				time = gtime.Time.from_str(time_spec)
+			except ValueError:
+				print('I do not understand that time, master.')
+				return
+			# Add or set as requested.
+			if reset:
+				self.time.hour = time.hour
+				self.time.minute = time.minute
+			else:
+				self.time += time
+		print(self.time)
+
 	def onecmd(self, line):
 		"""
 		Interpret the argument. (str)
@@ -222,6 +259,8 @@ class Egor(cmd.Cmd):
 		"""Set up the interface. (None)"""
 		# Load the SRD.
 		self.srd = srd.SRD()
+		# Set the default state.
+		self.time = gtime.Time(1, 1, 6, 0)
 		# Formatting.
 		print()
 

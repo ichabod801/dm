@@ -20,24 +20,42 @@ import srd
 import gtime
 
 HELP_GENERAL = """
-There is no functionality, so there is no help.
+You can use the roll command to roll dice, in all sorts of combinations. The
+basic syntax is NdS to roll N dice with S sides. See 'help roll' for more
+details and possibilities.
+
+Egor can track the in-game time for you. The time command can set and report
+the current game time, and the day command can advance the time in day 
+increments. You can also set alarms in game time to alert you of events that
+should happen, using the alarm command.
 """
 
 class Egor(cmd.Cmd):
 	"""
 	A helper for a D&D Dungeon master. (cmd.Cmd)
 
+	Attributes:
+	alarms: Alarms that have been set based on self.time. (list of tuple)
+	srd: The stored Source Resource Document for D&D. (SRD)
+	time: The current game time. (gtime.Time)
+
 	Class Attributes:
 	aliases: Different names for commands. (dict of str: str)
 	help_text: Additional help text. (dict of str: str)
 
 	Methods:
+	alarm_check: Check for any alarms that should have gone off. (None)
+	do_alarm: Set an alarm. (None)
+	do_day: Advance the time by day increments. (None)
 	do_quit: Exit the Egor interface. (True)
+	do_roll: Roll some dice. (None)
 	do_srd: Search the Source Resource Document. (None)
+	do_time: Update the current game time. (None)
 
 	Overridden Methods:
 	default
 	do_help
+	do_shell
 	onecmd
 	postcmd
 	precmd

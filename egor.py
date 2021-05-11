@@ -49,6 +49,19 @@ class Egor(cmd.Cmd):
 	help_text = {}
 	prompt = 'Yes, master? '
 
+	def alarm_check(self, time_spec):
+		"""
+		Check for any alarms that should have gone off. (None)
+
+		Parameters:
+		time_spec: The user input that changed the time. (str)
+		"""
+		for alarm, note in self.alarms:
+			if alarm <= self.time:
+				print()
+				print(f'ALARM at {alarm}: {note}')
+		self.alarms = [(alarm, note) for alarm, note in self.alarms if alarm > self.time]
+
 	def default(self, line):
 		"""
 		Handle unrecognized input. (bool)
@@ -65,6 +78,49 @@ class Egor(cmd.Cmd):
 		else:
 			return super().default(line)
 
+	def do_alarm(self, arguments):
+		"""
+		Set an alarm.
+
+		To set an alarm, type in + (for alarms a certain time from now) or = (for
+		alarms at a specific time), a time specification, and then a note to display
+		at when that time has passed.
+
+		The time specification can be a number of minutes (just a number), hours and
+		minutes (in HH:MM format), days/hours/minutes (in DD-HH:MM format) or a full
+		date (in YY/DD-HH:MM format).
+
+		So an alarm an hour and a half from now could be done with 'alarm + 90 ...'
+		or 'alarm + 1:30 ...', where ... is the note to display. An alarm at ten in 
+		the evening would be 'alarm = 20:00'. An alarm 1 day from now would be done
+		with 'alarm + 1-0:00'.
+		"""
+		# Parse the arguments.
+		symbol, time_spec, note = arguments.split(None, 2)
+		# Convert the time.
+		if '-' in time_spec and '/' not in time_spec:
+			time_spec = f'0/{time_spec}'
+		try:
+			time = gtime.Time.from_str(time_spec.replace(' ', '-'))
+		except ValueError:
+			print('I do not understand that time, master.')
+			return
+		# Set the alarm time.
+		if symbol == '+':
+			alarm = self.time + time
+		else:
+			if '/' not in time_spec:
+				time.year = self.time.year
+			if '-' not in time_spec:
+				time.day = self.time.day
+			alarm = time
+		# Add the alarm to the alarm tracking.
+		self.alarms.append((alarm, note))
+		self.alarms.sort()
+		# Update the user.
+		print(f'Alarm set for {alarm}.')
+		print(f'The next alarm is set for {self.alarms[0][0]} ({self.alarms[0][1]}).')
+
 	def do_day(self, arguments):
 		"""
 		Advance the time by day increments.
@@ -79,6 +135,7 @@ class Egor(cmd.Cmd):
 		self.time.hour = 6
 		self.time.minute = 0
 		print(self.time)
+		self.alarm_check('')
 
 	def do_help(self, arguments):
 		"""
@@ -234,6 +291,8 @@ class Egor(cmd.Cmd):
 			else:
 				self.time += time
 		print(self.time)
+		if words:
+			self.alarm_check(time_spec)
 
 	def onecmd(self, line):
 		"""
@@ -275,6 +334,7 @@ class Egor(cmd.Cmd):
 		# Load the SRD.
 		self.srd = srd.SRD()
 		# Set the default state.
+		self.alarms = []
 		self.time = gtime.Time(1, 1, 6, 0)
 		# Formatting.
 		print()

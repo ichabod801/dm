@@ -65,6 +65,21 @@ class Egor(cmd.Cmd):
 		else:
 			return super().default(line)
 
+	def do_day(self, arguments):
+		"""
+		Advance the time by day increments.
+
+		By default, the day command moves forward one day. If you provide an 
+		integer argument, it instead moves forward that many days.
+
+		The time is set to 6:00 in the morning on the next day.
+		"""
+		days = int(arguments) if arguments.strip() else 1
+		self.time += gtime.Time(day = days)
+		self.time.hour = 6
+		self.time.minute = 0
+		print(self.time)
+
 	def do_help(self, arguments):
 		"""
 		Handle help requests. (bool)

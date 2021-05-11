@@ -32,6 +32,7 @@ class Time(object):
 
 	Methods:
 	_rollover_check: Check for rollover/under in time parts after math. (tuple)
+	short: Short text representation. (str)
 
 	Class Methods:
 	from_str: Create a time from a string. (Time)
@@ -187,3 +188,7 @@ class Time(object):
 			return Time(year, day)
 		else:
 			raise ValueError('Invalid time specification.')
+
+	def short(self):
+		"""Short text representation. (str)"""
+		return f'{self.year}/{self.day} {self.hour}:{self.minute:02}'

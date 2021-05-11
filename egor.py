@@ -21,8 +21,9 @@ import gtime
 
 HELP_GENERAL = """
 You can use the roll command to roll dice, in all sorts of combinations. The
-basic syntax is NdS to roll N dice with S sides. See 'help roll' for more
-details and possibilities.
+basic syntax is 'roll NdS' to roll N dice with S sides. See 'help roll' for 
+more details and possibilities. Note that dice rolling is the default command,
+and it can be done without using the command 'roll'.
 
 Egor can track the in-game time for you. The time command can set and report
 the current game time, and the day command can advance the time in day 
@@ -36,6 +37,7 @@ class Egor(cmd.Cmd):
 
 	Attributes:
 	alarms: Alarms that have been set based on self.time. (list of tuple)
+	changes: A flag for changes in the game state. (bool)
 	srd: The stored Source Resource Document for D&D. (SRD)
 	time: The current game time. (gtime.Time)
 
@@ -49,8 +51,10 @@ class Egor(cmd.Cmd):
 	do_day: Advance the time by day increments. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
+	do_save: Save the current data. (None)
 	do_srd: Search the Source Resource Document. (None)
 	do_time: Update the current game time. (None)
+	load_data: Load any stored state data. (None)
 
 	Overridden Methods:
 	default
@@ -78,6 +82,7 @@ class Egor(cmd.Cmd):
 			if alarm <= self.time:
 				print()
 				print(f'ALARM at {alarm}: {note}')
+				self.changes = True
 		self.alarms = [(alarm, note) for alarm, note in self.alarms if alarm > self.time]
 
 	def default(self, line):
@@ -135,6 +140,7 @@ class Egor(cmd.Cmd):
 		# Add the alarm to the alarm tracking.
 		self.alarms.append((alarm, note))
 		self.alarms.sort()
+		self.changes = True
 		# Update the user.
 		print(f'Alarm set for {alarm}.')
 		print(f'The next alarm is set for {self.alarms[0][0]} ({self.alarms[0][1]}).')
@@ -153,6 +159,7 @@ class Egor(cmd.Cmd):
 		self.time.hour = 6
 		self.time.minute = 0
 		print(self.time)
+		self.changes = True
 		self.alarm_check('')
 
 	def do_help(self, arguments):
@@ -202,6 +209,10 @@ class Egor(cmd.Cmd):
 
 	def do_quit(self, arguments):
 		"""Say goodbye to Egor."""
+		if self.changes:
+			choice = input('But, master! The game state has changed! Shall I save it? ')
+			if choice.lower() in ('yes', 'y', 'da'):
+				self.do_save('')
 		return True
 
 	def do_roll(self, arguments):
@@ -227,6 +238,15 @@ class Egor(cmd.Cmd):
 			print(dice.roll(arguments))
 		except AttributeError:
 			print("I don't know how to roll that, master.")
+
+	def do_save(self, arguments):
+		"""Save the current data."""
+		with open('dm.dat', 'w') as data_file:
+			for alarm, text in self.alarms:
+				data_file.write('alarm: {}, {}\n'.format(alarm.short(), text))
+			data_file.write('time: {}\n'.format(self.time.short()))
+		self.changes = False
+		print('I have stored all of the data, master.')
 
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""
@@ -308,9 +328,22 @@ class Egor(cmd.Cmd):
 				self.time.minute = time.minute
 			else:
 				self.time += time
+			self.changes = True
 		print(self.time)
 		if words:
 			self.alarm_check(time_spec)
+
+	def load_data(self):
+		"""Load any stored state data. (None)"""
+		with open('dm.dat') as data_file:
+			for line in data_file:
+				tag, data = line.split(':', 1)
+				if tag == 'alarm':
+					alarm, text = data.split(',', 1)
+					alarm = gtime.Time.from_str(alarm.strip())
+					self.alarms.append((alarm, text.strip()))
+				elif tag == 'time':
+					self.time = gtime.Time.from_str(data.strip())
 
 	def onecmd(self, line):
 		"""
@@ -353,7 +386,14 @@ class Egor(cmd.Cmd):
 		self.srd = srd.SRD()
 		# Set the default state.
 		self.alarms = []
+		self.changes = False
 		self.time = gtime.Time(1, 1, 6, 0)
+		# Load any saved state.
+		try:
+			self.load_data()
+			print('The game state has been restored, master.')
+		except FileNotFoundError:
+			pass
 		# Formatting.
 		print()
 

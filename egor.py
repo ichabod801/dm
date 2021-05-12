@@ -226,11 +226,11 @@ class Egor(cmd.Cmd):
 	def do_save(self, arguments):
 		"""Save the current data."""
 		with open('dm.dat', 'w') as data_file:
-			for alarm, text in self.alarms:
-				data_file.write('alarm: {}, {}\n'.format(alarm.short(), text))
+			for alarm in self.alarms:
+				data_file.write('alarm: {}\n'.format(alarm.data()))
 			data_file.write('time: {}\n'.format(self.time.short()))
 		self.changes = False
-		print('I have stored all of the data, master.')
+		print('I have stored all of the incantations, master.')
 
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""
@@ -323,9 +323,7 @@ class Egor(cmd.Cmd):
 			for line in data_file:
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
-					alarm, text = data.split(',', 1)
-					alarm = gtime.Time.from_str(alarm.strip())
-					self.alarms.append((alarm, text.strip()))
+					self.alarms.append(gtime.Alarm.from_data(data.strip()))
 				elif tag == 'time':
 					self.time = gtime.Time.from_str(data.strip())
 

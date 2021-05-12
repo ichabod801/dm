@@ -23,6 +23,9 @@ class Alarm(object):
 	repeat: A flag for repeating the alarm after it goes off. (bool or Time)
 	trigger: The event that causes the alarm to go off. (Time or str)
 
+	Class Methods:
+	from_data: Create an alarm from the storage text. (Alarm)
+
 	Overridden Methods:
 	__init__
 	__str__
@@ -62,12 +65,26 @@ class Alarm(object):
 			text = 'Alarm at'
 		return f'{text} {self.trigger}; {self.note}'
 
+	@classmethod
+	def from_data(self, data):
+		"""Create an alarm from the storage text. (Alarm)"""
+		if data.startswith('event'):
+			return AlarmByEvent.from_data(data)
+		elif data.startswith('time'):
+			return AlarmByTime.from_data(data)
+		else:
+			raise ValueError(f'Invalid alarm data: {data!r}.')
+
 class AlarmByEvent(Alarm):
 	"""
 	An alarm that is triggered by a specific event. (Alarm)
 
 	Methods:
 	check: See if the alarm has been triggered. (None)
+	data: Storage text representation. (str)
+
+	Class Methods:
+	from_data: Create an alarm from the storage text. (AlarmByEvent)
 	"""
 
 	def check(self, event, time):
@@ -82,12 +99,26 @@ class AlarmByEvent(Alarm):
 			print(f'ALARM: {self.note}')
 			self.done = not self.repeat
 
+	def data(self):
+		"""Storage text representation. (str)"""
+		return f'event {self.trigger} {self.repeat} {self.note}'
+
+	@classmethod
+	def from_data(self, data):
+		"""Create an alarm from the storage text. (AlarmByEvent)"""
+		event, trigger, repeat, note = data.split(None, 3)
+		return AlarmByEvent(trigger, note, repeat == 'True')
+
 class AlarmByTime(Alarm):
 	"""
 	An alarm that is triggered at a specific time. (Alarm)
 
 	Methods:
 	check: See if the alarm has been triggered. (None)
+	data: Storage text representation. (str)
+
+	Class Methods:
+	from_data: Create an alarm from the storage text. (AlarmByTime)
 	"""
 
 	def check(self, event, time):
@@ -105,6 +136,26 @@ class AlarmByTime(Alarm):
 			else:
 				self.done = True
 				break
+
+	def data(self):
+		"""Storage text representation. (str)"""
+		trigger = self.trigger.short().replace(' ', '-')
+		if self.repeat:
+			repeat = self.repeat.short().replace(' ', '-')
+		else:
+			repeat = 'False'
+		return f'time {trigger} {repeat} {self.note}'
+
+	@classmethod
+	def from_data(self, data):
+		"""Create an alarm from the storage text. (AlarmByEvent)"""
+		time, trigger, repeat, note = data.split(None, 3)
+		trigger = Time.from_str(trigger.replace('-', ' '))
+		if repeat == 'False':
+			repeat = False
+		else:
+			repeat = Time.from_str(repeat.replace('-', ' '))
+		return AlarmByTime(trigger, note, repeat)
 
 @functools.total_ordering
 class Time(object):

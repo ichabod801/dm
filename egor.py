@@ -52,6 +52,7 @@ class Egor(cmd.Cmd):
 	do_day: Advance the time by day increments. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
+	do_set: Set one of the options. (None)
 	do_save: Save the current data. (None)
 	do_srd: Search the Source Resource Document. (None)
 	do_time: Update the current game time. (None)
@@ -231,6 +232,22 @@ class Egor(cmd.Cmd):
 			data_file.write('time: {}\n'.format(self.time.short()))
 		self.changes = False
 		print('I have stored all of the incantations, master.')
+
+	def do_set(self, arguments):
+		"""Set one of the options."""
+		option, setting = arguments.split(None, 1)
+		option = option.lower()
+		if option == 'time-var':
+			variable, value = setting.split()
+			variable = variable.lower()
+			if value.isdigit():
+				self.time_vars[variable] = value
+				print(f'The time variable {variable} was set to {value}.')
+				self.changes = True
+			else:
+				print(f'I do not know the number {value}, master. I am not very good at math.')
+		else:
+			print(f'I do not recognize the option {option!r}, master.')
 
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""

@@ -230,6 +230,8 @@ class Egor(cmd.Cmd):
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
 			data_file.write('time: {}\n'.format(self.time.short()))
+			for var, value in self.time_vars.items():
+				data_file.write('time-var: {} {}\n'.format(var, value))
 		self.changes = False
 		print('I have stored all of the incantations, master.')
 
@@ -343,6 +345,9 @@ class Egor(cmd.Cmd):
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
 				elif tag == 'time':
 					self.time = gtime.Time.from_str(data.strip())
+				elif tag == 'time-var':
+					var, value = data.split()
+					self.time_vars[var] = value
 
 	def onecmd(self, line):
 		"""
@@ -387,6 +392,7 @@ class Egor(cmd.Cmd):
 		self.alarms = []
 		self.changes = False
 		self.time = gtime.Time(1, 1, 6, 0)
+		self.time_vars = Egor.time_vars.copy()
 		# Load any saved state.
 		try:
 			self.load_data()

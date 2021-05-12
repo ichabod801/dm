@@ -4,11 +4,88 @@ gtime.py
 A module for general, low-precision time tracking.
 
 Classes:
+Alarm: An event that triggers at a given time. (object)
+AlarmByEvent: An alarm that is triggered by a specific event. (object)
+AlarmByTime: An alarm that is triggered at a specific time. (object)
 Time: A time, precise to the minute, with months. (object)
 """
 
 import functools
 import re
+
+class Alarm(object):
+	"""
+	An event that triggers at a given time. (object)
+
+	Attributes:
+	done: A flag for the alarm being finished. (bool)
+	note: The message displayed when the alarm goes off. (str)
+	repeat: A flag for repeating the alarm after it goes off. (bool)
+	trigger: The event that causes the alarm to go off. (Time or str)
+
+	Overridden Methods:
+	__init__
+	"""
+
+	def __init__(self, trigger, note, repeat):
+		"""
+		Set up the alarm. (None)
+
+		Parameters:
+		trigger: The event that causes the alarm to go off. (Time or str)
+		note: The message displayed when the alarm goes off. (str)
+		repeat: A flag for repeating the alarm after it goes off. (bool)
+		"""
+		# Set the given attributes.
+		self.trigger = trigger
+		self.note = note
+		self.repeat = repeat
+		# Set the default attributes.
+		self.done = False
+
+class AlarmByEvent(object):
+	"""
+	An alarm that is triggered by a specific event. (object)
+
+	Methods:
+	check: See if the alarm has been triggered. (None)
+	"""
+
+	def check(self, event, time):
+		"""
+		See if the alarm has been triggered. (None)
+
+		Parameters:
+		event: The event that has just happened. (str)
+		time: The current time. (Time)
+		"""
+		if self.trigger.lower() == event.lower():
+			print(f'ALARM: {self.note}')
+			self.done = not self.repeat
+
+class AlarmByTime(object):
+	"""
+	An alarm that is triggered at a specific time. (object)
+
+	Methods:
+	check: See if the alarm has been triggered. (None)
+	"""
+
+	def check(self, event, time):
+		"""
+		See if the alarm has been triggered. (None)
+
+		Parameters:
+		event: The event that has just happened. (str)
+		time: The current time. (Time)
+		"""
+		while self.trigger <= time:
+			print(f'ALARM: {self.note}')
+			if self.repeat:
+				self.trigger += self.repeat
+			else:
+				self.done = True
+				break
 
 @functools.total_ordering
 class Time(object):
@@ -192,3 +269,40 @@ class Time(object):
 	def short(self):
 		"""Short text representation. (str)"""
 		return f'{self.year}/{self.day} {self.hour}:{self.minute:02}'
+
+def new_alarm(alarm_spec, now, events = {}):
+	"""
+	Create a new alarm. (Alarm)
+
+	Parameters:
+	alarm_spec: The user specification of the alarm. (str)
+	now: The current game time. (Time)
+	events: The valid events. (dict of str: str)
+	"""
+	# Parse the arguments.
+	symbol, time_spec, note = arguments.split(None, 2)
+	# Check for time variable alarms.
+	if time_spec.lower() in events:
+		alarm = AlarmByEvent(time_spec.lower(), note, symbol == '@')
+	else:
+		# Convert the time.
+		if '-' in time_spec and '/' not in time_spec:
+			time_spec = f'0/{time_spec}'
+		time = gtime.Time.from_str(time_spec.replace(' ', '-'))
+		# Set the alarm time.
+		if symbol = '+':
+			trigger = now + time
+			repeat = False
+		elif symbol == '@':
+			trigger = now + time
+			repeat = time
+		else:
+			if '/' not in time_spec:
+				time.year = now.year
+			if '-' not in time_spec:
+				time.day = now.day
+			trigger = time
+			repeat = False
+		# Create the alarm.
+		alarm = AlarmByTime(trigger, note, repeat)
+	return alarm

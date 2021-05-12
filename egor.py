@@ -44,6 +44,7 @@ class Egor(cmd.Cmd):
 	Class Attributes:
 	aliases: Different names for commands. (dict of str: str)
 	help_text: Additional help text. (dict of str: str)
+	time_vars: Variables for game time and alarms. (dict of str: str)
 
 	Methods:
 	alarm_check: Check for any alarms that should have gone off. (None)
@@ -70,6 +71,7 @@ class Egor(cmd.Cmd):
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
+	time_vars = {'combat': '10', 'long-rest': '8:00', 'room': '10', 'short-rest': '60'}
 
 	def alarm_check(self, time_spec):
 		"""
@@ -83,6 +85,10 @@ class Egor(cmd.Cmd):
 				print()
 				print(f'ALARM at {alarm}: {note}')
 				self.changes = True
+		if time_spec in self.var_alarms:
+			print()
+			print(f'ALARM due to {time_spec}: {self.var_alarms[time_spec]}')
+			del self.var_alarms[time_spec]
 		self.alarms = [(alarm, note) for alarm, note in self.alarms if alarm > self.time]
 
 	def default(self, line):
@@ -120,30 +126,35 @@ class Egor(cmd.Cmd):
 		"""
 		# Parse the arguments.
 		symbol, time_spec, note = arguments.split(None, 2)
-		# Convert the time.
-		if '-' in time_spec and '/' not in time_spec:
-			time_spec = f'0/{time_spec}'
-		try:
-			time = gtime.Time.from_str(time_spec.replace(' ', '-'))
-		except ValueError:
-			print('I do not understand that time, master.')
-			return
-		# Set the alarm time.
-		if symbol == '+':
-			alarm = self.time + time
+		# Check for time variable alarms.
+		if time_spec.lower() in self.time_vars:
+			self.var_alarms[time_spec.lower()] = note
+			print(f'Alarm set for the next {time_spec.lower()}.')
 		else:
-			if '/' not in time_spec:
-				time.year = self.time.year
-			if '-' not in time_spec:
-				time.day = self.time.day
-			alarm = time
-		# Add the alarm to the alarm tracking.
-		self.alarms.append((alarm, note))
-		self.alarms.sort()
-		self.changes = True
-		# Update the user.
-		print(f'Alarm set for {alarm}.')
-		print(f'The next alarm is set for {self.alarms[0][0]} ({self.alarms[0][1]}).')
+			# Convert the time.
+			if '-' in time_spec and '/' not in time_spec:
+				time_spec = f'0/{time_spec}'
+			try:
+				time = gtime.Time.from_str(time_spec.replace(' ', '-'))
+			except ValueError:
+				print('I do not understand that time, master.')
+				return
+			# Set the alarm time.
+			if symbol == '+':
+				alarm = self.time + time
+			else:
+				if '/' not in time_spec:
+					time.year = self.time.year
+				if '-' not in time_spec:
+					time.day = self.time.day
+				alarm = time
+			# Add the alarm to the alarm tracking.
+			self.alarms.append((alarm, note))
+			self.alarms.sort()
+			self.changes = True
+			# Update the user.
+			print(f'Alarm set for {alarm}.')
+			print(f'The next alarm is set for {self.alarms[0][0]} ({self.alarms[0][1]}).')
 
 	def do_day(self, arguments):
 		"""
@@ -160,7 +171,7 @@ class Egor(cmd.Cmd):
 		self.time.minute = 0
 		print(self.time)
 		self.changes = True
-		self.alarm_check('')
+		self.alarm_check('day')
 
 	def do_help(self, arguments):
 		"""
@@ -318,7 +329,7 @@ class Egor(cmd.Cmd):
 				reset = False
 			# Get the time.
 			try:
-				time = gtime.Time.from_str(time_spec)
+				time = gtime.Time.from_str(self.time_vars.get(time_spec, time_spec))
 			except ValueError:
 				print('I do not understand that time, master.')
 				return

@@ -98,6 +98,8 @@ class Egor(cmd.Cmd):
 			return self.onecmd(' '.join(words))
 		elif dice.DICE_REGEX.search(line):
 			self.do_roll(line)
+		elif line.lower() in self.time_vars:
+			self.do_time(line.lower())
 		else:
 			return super().default(line)
 
@@ -127,18 +129,32 @@ class Egor(cmd.Cmd):
 		with 'alarm @ 30'. One that repeats every short rest would be 'alarm @ 
 		short-rest'. Note that repeating alarms must be a relative time value, or a
 		time variable.
+
+		As a special case you can use 'alarm kill'. This will list the current alarms
+		and let you choose one to delete.
 		"""
-		# Get the alarm
-		try:
-			alarm = gtime.new_alarm(arguments, self.time, self.time_vars)
-		except ValueError:
-			print('I do not understand that time, master.')
-			return
-		# Add it to the list.
-		self.alarms.append(alarm)
-		self.changes = True
-		# Update the user.
-		print(f'Alarm set for {alarm.trigger}.')
+		if arguments.strip().lower() == 'kill':
+			# Show the alarms.
+			for alarm_index, alarm in enumerate(self.alarms, start = 1):
+				print(f'{alarm_index}: {alarm}')
+			# Get the user's choice.
+			choice = input('\nWhich alarm would you like to kill, master (return for none)? ')
+			if choice.strip():
+				# Kill the alarm.
+				del self.alarms[int(choice) - 1]
+				print('\nIt squeaked when I killed it, master.')
+		else:
+			# Get the alarm
+			try:
+				alarm = gtime.new_alarm(arguments, self.time, self.time_vars)
+			except ValueError:
+				print('I do not understand that time, master.')
+				return
+			# Add it to the list.
+			self.alarms.append(alarm)
+			self.changes = True
+			# Update the user.
+			print(f'Alarm set for {alarm.trigger}.')
 
 	def do_day(self, arguments):
 		"""

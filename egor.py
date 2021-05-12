@@ -337,7 +337,9 @@ class Egor(cmd.Cmd):
 		current time, which is then displayed. There are also time variables that
 		Egor recognizes. By default, these are 'short-rest' (60 minutes), long-rest
 		(8 hours), combat (10 minutes), and room (10 minutes). You can change these
-		values and create new time variables using the set command.
+		values and create new time variables using the set command. Note that you
+		can enter a time variable without the time command, and it will increment
+		the time by that ammount.
 
 		The time specification can be preceded with 'set' or '=' to set the time
 		to a value, rather than adding that value to the current time. You must

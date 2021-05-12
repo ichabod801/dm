@@ -104,19 +104,29 @@ class Egor(cmd.Cmd):
 	def do_alarm(self, arguments):
 		"""
 		Set an alarm.
+		
+		The argument to the alarm command is an alarm specification, which has three
+		parts: a symbol for the type of the alarm, a time specification, and then a 
+		note to display when that time has passed.
 
-		To set an alarm, type in + (for alarms a certain time from now) or = (for
-		alarms at a specific time), a time specification, and then a note to display
-		at when that time has passed.
+		The three types and their symbols are:
+			+ indicates a relative alarm, that will happen in a certain amount of 
+				time.
+			= indicates an absolute alarm, that will happen at a specific time.
+			@ indicates a repeating alarm.
 
 		The time specification can be a number of minutes (just a number), hours and
 		minutes (in HH:MM format), days/hours/minutes (in DD-HH:MM format) or a full
-		date (in YY/DD-HH:MM format).
+		date (in YY/DD-HH:MM format). You can also use a time variable as a time
+		specification.
 
 		So an alarm an hour and a half from now could be done with 'alarm + 90 ...'
 		or 'alarm + 1:30 ...', where ... is the note to display. An alarm at ten in 
 		the evening would be 'alarm = 20:00'. An alarm 1 day from now would be done
-		with 'alarm + 1-0:00'.
+		with 'alarm + 1-0:00'. An alarm that repeats every 30 minutes would be done
+		with 'alarm @ 30'. One that repeats every short rest would be 'alarm @ 
+		short-rest'. Note that repeating alarms must be a relative time value, or a
+		time variable.
 		"""
 		# Get the alarm
 		try:
@@ -236,18 +246,24 @@ class Egor(cmd.Cmd):
 		print('I have stored all of the incantations, master.')
 
 	def do_set(self, arguments):
-		"""Set one of the options."""
+		"""
+		Set one of the options.
+
+		The options you can set include:
+
+		* time-var: Changes or adds time variables (see the time command). Follow
+			time-var with a time variable name and a time specification, such as
+			'set time-var short-rest 5'. Setting a time variable to another time
+			variable does not work.
+		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
 		if option == 'time-var':
 			variable, value = setting.split()
 			variable = variable.lower()
-			if value.isdigit():
-				self.time_vars[variable] = value
-				print(f'The time variable {variable} was set to {value}.')
-				self.changes = True
-			else:
-				print(f'I do not know the number {value}, master. I am not very good at math.')
+			self.time_vars[variable] = value
+			print(f'The time variable {variable} was set to {value}.')
+			self.changes = True
 		else:
 			print(f'I do not recognize the option {option!r}, master.')
 
@@ -302,7 +318,10 @@ class Egor(cmd.Cmd):
 		Update the current game time. (t)
 
 		Time can be specified as minutes, or has hour:minute. It is added to the
-		current time, which is then displayed.
+		current time, which is then displayed. There are also time variables that
+		Egor recognizes. By default, these are 'short-rest' (60 minutes), long-rest
+		(8 hours), combat (10 minutes), and room (10 minutes). You can change these
+		values and create new time variables using the set command.
 
 		The time specification can be preceded with 'set' or '=' to set the time
 		to a value, rather than adding that value to the current time. You must

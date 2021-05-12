@@ -25,6 +25,8 @@ class Alarm(object):
 
 	Overridden Methods:
 	__init__
+	__str__
+	__repr__
 	"""
 
 	def __init__(self, trigger, note, repeat):
@@ -42,6 +44,23 @@ class Alarm(object):
 		self.repeat = repeat
 		# Set the default attributes.
 		self.done = False
+
+	def __repr__(self):
+		"""Debugging text representation."""
+		text = f'<Alarm {self.trigger} {self.note[:20]!r}'
+		if self.repeat:
+			text = f'{text} @>'
+		else:
+			text = f'{text}>'
+		return text
+
+	def __str__(self):
+		"""Human readable text representation."""
+		if self.repeat:
+			text = 'Repeating alarm at'
+		else:
+			text = 'Alarm at'
+		return f'{text} {self.trigger}; {self.note}'
 
 class AlarmByEvent(object):
 	"""

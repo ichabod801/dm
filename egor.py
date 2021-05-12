@@ -80,16 +80,9 @@ class Egor(cmd.Cmd):
 		Parameters:
 		time_spec: The user input that changed the time. (str)
 		"""
-		for alarm, note in self.alarms:
-			if alarm <= self.time:
-				print()
-				print(f'ALARM at {alarm}: {note}')
-				self.changes = True
-		if time_spec in self.var_alarms:
-			print()
-			print(f'ALARM due to {time_spec}: {self.var_alarms[time_spec]}')
-			del self.var_alarms[time_spec]
-		self.alarms = [(alarm, note) for alarm, note in self.alarms if alarm > self.time]
+		for alarm in self.alarms:
+			alarm.check()
+		self.alarms = [alarm for alarm in self.alarms if not alarm.done]
 
 	def default(self, line):
 		"""
@@ -124,37 +117,17 @@ class Egor(cmd.Cmd):
 		the evening would be 'alarm = 20:00'. An alarm 1 day from now would be done
 		with 'alarm + 1-0:00'.
 		"""
-		# Parse the arguments.
-		symbol, time_spec, note = arguments.split(None, 2)
-		# Check for time variable alarms.
-		if time_spec.lower() in self.time_vars:
-			self.var_alarms[time_spec.lower()] = note
-			print(f'Alarm set for the next {time_spec.lower()}.')
-		else:
-			# Convert the time.
-			if '-' in time_spec and '/' not in time_spec:
-				time_spec = f'0/{time_spec}'
-			try:
-				time = gtime.Time.from_str(time_spec.replace(' ', '-'))
-			except ValueError:
-				print('I do not understand that time, master.')
-				return
-			# Set the alarm time.
-			if symbol == '+':
-				alarm = self.time + time
-			else:
-				if '/' not in time_spec:
-					time.year = self.time.year
-				if '-' not in time_spec:
-					time.day = self.time.day
-				alarm = time
-			# Add the alarm to the alarm tracking.
-			self.alarms.append((alarm, note))
-			self.alarms.sort()
-			self.changes = True
-			# Update the user.
-			print(f'Alarm set for {alarm}.')
-			print(f'The next alarm is set for {self.alarms[0][0]} ({self.alarms[0][1]}).')
+		# Get the alarm
+		try:
+			alarm = gtime.new_alarm(arguments)
+		except ValueError:
+			print('I do not understand that time, master.')
+			return
+		# Add it to the list.
+		self.alarms.append(alarm)
+		self.changes = True
+		# Update the user.
+		print(f'Alarm set for {alarm.trigger}.')
 
 	def do_day(self, arguments):
 		"""

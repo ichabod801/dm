@@ -81,7 +81,7 @@ class Egor(cmd.Cmd):
 		time_spec: The user input that changed the time. (str)
 		"""
 		for alarm in self.alarms:
-			alarm.check()
+			alarm.check(time_spec, self.time)
 		self.alarms = [alarm for alarm in self.alarms if not alarm.done]
 
 	def default(self, line):
@@ -119,7 +119,7 @@ class Egor(cmd.Cmd):
 		"""
 		# Get the alarm
 		try:
-			alarm = gtime.new_alarm(arguments)
+			alarm = gtime.new_alarm(arguments, self.time, self.time_vars)
 		except ValueError:
 			print('I do not understand that time, master.')
 			return

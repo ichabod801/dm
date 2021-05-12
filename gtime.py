@@ -5,8 +5,8 @@ A module for general, low-precision time tracking.
 
 Classes:
 Alarm: An event that triggers at a given time. (object)
-AlarmByEvent: An alarm that is triggered by a specific event. (object)
-AlarmByTime: An alarm that is triggered at a specific time. (object)
+AlarmByEvent: An alarm that is triggered by a specific event. (Alarm)
+AlarmByTime: An alarm that is triggered at a specific time. (Alarm)
 Time: A time, precise to the minute, with months. (object)
 """
 
@@ -20,7 +20,7 @@ class Alarm(object):
 	Attributes:
 	done: A flag for the alarm being finished. (bool)
 	note: The message displayed when the alarm goes off. (str)
-	repeat: A flag for repeating the alarm after it goes off. (bool)
+	repeat: A flag for repeating the alarm after it goes off. (bool or Time)
 	trigger: The event that causes the alarm to go off. (Time or str)
 
 	Overridden Methods:
@@ -36,7 +36,7 @@ class Alarm(object):
 		Parameters:
 		trigger: The event that causes the alarm to go off. (Time or str)
 		note: The message displayed when the alarm goes off. (str)
-		repeat: A flag for repeating the alarm after it goes off. (bool)
+		repeat: A flag for repeating the alarm after it goes off. (bool or Time)
 		"""
 		# Set the given attributes.
 		self.trigger = trigger
@@ -62,9 +62,9 @@ class Alarm(object):
 			text = 'Alarm at'
 		return f'{text} {self.trigger}; {self.note}'
 
-class AlarmByEvent(object):
+class AlarmByEvent(Alarm):
 	"""
-	An alarm that is triggered by a specific event. (object)
+	An alarm that is triggered by a specific event. (Alarm)
 
 	Methods:
 	check: See if the alarm has been triggered. (None)
@@ -82,9 +82,9 @@ class AlarmByEvent(object):
 			print(f'ALARM: {self.note}')
 			self.done = not self.repeat
 
-class AlarmByTime(object):
+class AlarmByTime(Alarm):
 	"""
-	An alarm that is triggered at a specific time. (object)
+	An alarm that is triggered at a specific time. (Alarm)
 
 	Methods:
 	check: See if the alarm has been triggered. (None)
@@ -298,8 +298,8 @@ def new_alarm(alarm_spec, now, events = {}):
 	now: The current game time. (Time)
 	events: The valid events. (dict of str: str)
 	"""
-	# Parse the arguments.
-	symbol, time_spec, note = arguments.split(None, 2)
+	# Parse the alarm specification.
+	symbol, time_spec, note = alarm_spec.split(None, 2)
 	# Check for time variable alarms.
 	if time_spec.lower() in events:
 		alarm = AlarmByEvent(time_spec.lower(), note, symbol == '@')
@@ -307,9 +307,9 @@ def new_alarm(alarm_spec, now, events = {}):
 		# Convert the time.
 		if '-' in time_spec and '/' not in time_spec:
 			time_spec = f'0/{time_spec}'
-		time = gtime.Time.from_str(time_spec.replace(' ', '-'))
+		time = Time.from_str(time_spec.replace(' ', '-'))
 		# Set the alarm time.
-		if symbol = '+':
+		if symbol == '+':
 			trigger = now + time
 			repeat = False
 		elif symbol == '@':

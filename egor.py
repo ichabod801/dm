@@ -11,6 +11,7 @@ Egor: A helper for a D&D Dungeon master. (cmd.Cmd)
 """
 
 import cmd
+import collections
 import re
 import textwrap
 import traceback
@@ -29,6 +30,10 @@ Egor can track the in-game time for you. The time command can set and report
 the current game time, and the day command can advance the time in day 
 increments. You can also set alarms in game time to alert you of events that
 should happen, using the alarm command.
+
+You can store notes about the game with the note command, and later review them
+with the study command. You can also search the Source Resource Documents with
+the srd command.
 """
 
 class Egor(cmd.Cmd):
@@ -44,19 +49,23 @@ class Egor(cmd.Cmd):
 	Class Attributes:
 	aliases: Different names for commands. (dict of str: str)
 	help_text: Additional help text. (dict of str: str)
+	tag_regex: A regular expression for note tags. (Pattern)
 	time_vars: Variables for game time and alarms. (dict of str: str)
 
 	Methods:
 	alarm_check: Check for any alarms that should have gone off. (None)
 	do_alarm: Set an alarm. (None)
 	do_day: Advance the time by day increments. (None)
+	do_note: Record a note. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
 	do_set: Set one of the options. (None)
 	do_save: Save the current data. (None)
 	do_srd: Search the Source Resource Document. (None)
+	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
 	load_data: Load any stored state data. (None)
+	new_note: Store a note. (None)
 
 	Overridden Methods:
 	default
@@ -68,10 +77,11 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'q': 'quit', 'r': 'roll', 't': 'time'}
+	aliases = {'n': 'note', 'q': 'quit', 'r': 'roll', 't': 'time'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
+	tag_regex = re.compile(r'[a-zA-Z0-9\-]+')
 	time_vars = {'combat': '10', 'long-rest': '8:00', 'room': '10', 'short-rest': '60'}
 
 	def alarm_check(self, time_spec):
@@ -218,6 +228,21 @@ class Egor(cmd.Cmd):
 		else:
 			print("I can't help you with that.")
 
+	def do_note(self, arguments):
+		"""
+		Record a note. (n)
+
+		Write a note to yourself. Notes can later be read with the study command.
+
+		At the end of your note you can put a pipe (|). Anything after the pipe is
+		considered to be a tag. You can put in mutliple tags separated by anything 
+		that isn't a letter, number, or dash (-). Tags can be used to search for 
+		notes with the study command.
+		"""
+		self.new_note(arguments)
+		self.changes = True
+		print('Your note has been added to the scroll, master.')
+
 	def do_quit(self, arguments):
 		"""Say goodbye to Egor."""
 		if self.changes:
@@ -253,8 +278,19 @@ class Egor(cmd.Cmd):
 	def do_save(self, arguments):
 		"""Save the current data."""
 		with open('dm.dat', 'w') as data_file:
+			# Save the alarms.
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
+			# Save the notes with tags (allows deleting notes w/o messing up tags).
+			save_notes = [f'note: {note}' for note in self.notes]
+			for tag, indices in self.tags.items():
+				for index in indices:
+					if '|' not in save_notes[index]:
+						save_notes[index] += ' |'
+					save_notes[index] += f' {tag}'
+			for note in save_notes:
+				data_file.write(note + '\n')
+			# Save the time data.
 			data_file.write('time: {}\n'.format(self.time.short()))
 			for var, value in self.time_vars.items():
 				data_file.write('time-var: {} {}\n'.format(var, value))
@@ -329,6 +365,33 @@ class Egor(cmd.Cmd):
 			# Warn the user if there are no matches.
 			print('No matches found.')
 
+	def do_study(self, arguments):
+		"""
+		Study previously recorded notes.
+
+		As an argument you can give a tag. Only notes with that tag will be
+		displayed. Or you can give a dollar sign ($) followed by a regular
+		expression. Any note matching that regular expression will be shown.
+		Regular expressions are searched with the IGNORECASE flag.
+		"""
+		if not arguments.strip():
+			# Show all notes.
+			for note in self.notes:
+				print(note)
+		elif arguments.startswith('$'):
+			# Subset notes with a regular expression.
+			note_regex = re.compile(arguments[1:])
+			for note in self.notes:
+				if note_regex.search(note, re.IGNORECASE):
+					print(note)
+		else:
+			# Subset notes with a tag.
+			if arguments in self.tags:
+				for note_index in self.tags[arguments]:
+					print(self.notes[note_index])
+			else:
+				print(f'I do not know the tag {arguments!r}, master.')
+
 	def do_time(self, arguments):
 		"""
 		Update the current game time. (t)
@@ -380,11 +443,25 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
+				if tag == 'note':
+					self.new_note(data.strip())
 				elif tag == 'time':
 					self.time = gtime.Time.from_str(data.strip())
 				elif tag == 'time-var':
 					var, value = data.split()
 					self.time_vars[var] = value
+
+	def new_note(self, note_text):
+		"""
+		Store a note. (None)
+
+		Parameters:
+		note_text: The note, possibly with tags. (str)
+		"""
+		note, pipe, tags = note_text.partition('|')
+		self.notes.append(note)
+		for tag in self.tag_regex.findall(tags):
+			self.tags[tag].append(len(self.notes) - 1)
 
 	def onecmd(self, line):
 		"""
@@ -430,6 +507,8 @@ class Egor(cmd.Cmd):
 		self.changes = False
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()
+		self.notes = []
+		self.tags = collections.defaultdict(list)
 		# Load any saved state.
 		try:
 			self.load_data()

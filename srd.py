@@ -11,6 +11,7 @@ SRD: A collection of information from the SRD. (object)
 """
 
 import collections
+import os
 import re
 
 import creature
@@ -329,9 +330,10 @@ class SRD(object):
 		folder: The local folder the SRD is stored in. (str)
 		"""
 		chapters = {}
-		for file_name in self.file_names:
-			with open(f'{folder}/{file_name}.md') as srd_file:
-				chapters[file_name[3:]] = srd_file.read().split('\n')
+		for file_name in os.listdir(folder):
+			if file_name[:2].isdigit() and file_name.endswith('.md'):
+				with open(f'{folder}/{file_name}') as srd_file:
+					chapters[file_name[3:]] = srd_file.read().split('\n')
 		return chapters
 
 	def text_search(self, terms):

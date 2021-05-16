@@ -43,6 +43,8 @@ class Egor(cmd.Cmd):
 
 	Attributes:
 	alarms: Alarms that have been set based on self.time. (list of tuple)
+	campaign: The loaded campaign information. (SRD)
+	campaign_folder: A path to the folder with the campaign files. (str)
 	changes: A flag for changes in the game state. (bool)
 	srd: The stored Source Resource Document for D&D. (SRD)
 	time: The current game time. (gtime.Time)
@@ -65,6 +67,7 @@ class Egor(cmd.Cmd):
 	do_srd: Search the Source Resource Document. (None)
 	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
+	load_campaign: Load stored campaign data. (None)
 	load_data: Load any stored state data. (None)
 	new_note: Store a note. (None)
 
@@ -295,6 +298,9 @@ class Egor(cmd.Cmd):
 			data_file.write('time: {}\n'.format(self.time.short()))
 			for var, value in self.time_vars.items():
 				data_file.write('time-var: {} {}\n'.format(var, value))
+			# Save the loaded campaign, if any.
+			if self.campaign_folder:
+				data_file.write('camapaign: {}\n'.format(self.campaign_folder))
 		self.changes = False
 		print('I have stored all of the incantations, master.')
 
@@ -311,7 +317,10 @@ class Egor(cmd.Cmd):
 		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
-		if option == 'time-var':
+		if option == 'campaign':
+			self.campaign_folder = setting
+			self.load_campaign()
+		elif option == 'time-var':
 			variable, value = setting.split()
 			variable = variable.lower()
 			self.time_vars[variable] = value
@@ -456,6 +465,10 @@ class Egor(cmd.Cmd):
 		if words:
 			self.alarm_check(time_spec)
 
+	def load_campaign(self):
+		"""Load stored campaign data. (None)"""
+		self.campaign = srd.SRD(self.campaign_folder)
+
 	def load_data(self):
 		"""Load any stored state data. (None)"""
 		with open('dm.dat') as data_file:
@@ -463,7 +476,9 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
-				if tag == 'note':
+				elif tag == 'campaign':
+					self.campaign_folder = data.strip()
+				elif tag == 'note':
 					self.new_note(data.strip())
 				elif tag == 'time':
 					self.time = gtime.Time.from_str(data.strip())
@@ -524,10 +539,11 @@ class Egor(cmd.Cmd):
 		self.srd = srd.SRD()
 		# Set the default state.
 		self.alarms = []
+		self.campaign_folder = ''
 		self.changes = False
+		self.notes = []
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()
-		self.notes = []
 		self.tags = collections.defaultdict(list)
 		# Load any saved state.
 		try:
@@ -535,6 +551,8 @@ class Egor(cmd.Cmd):
 			print('The game state has been restored, master.')
 		except FileNotFoundError:
 			pass
+		if self.campaign_folder:
+			self.load_campaign()
 		# Formatting.
 		print()
 

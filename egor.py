@@ -400,17 +400,17 @@ class Egor(cmd.Cmd):
 		if arguments == 'monsters':
 			self.zoo = {}
 			sizes = ('*Tiny', '*Smal', '*Medi', '*Larg', '*Huge', '*Garg')
-			search = [self.srd.chapters['monsters']]
+			search = [self.srd.chapters['monsters'], self.srd.chapters['creatures'], self.srd.chapters['npcs']]
 			while search:
 				node = search.pop()
-				if node.level in (2, 3):
+				if node.level < 4:
 					intro = node.children[0]
 					if isinstance(intro, srd.TextNode) and intro.lines[0][:5] in sizes:
 						print(intro.parent)
 						monster = creature.Creature(node)
 						self.zoo[monster.name] = monster
-				if node.level < 3:
-					search = [kid for kid in node.children if isinstance(kid, srd.HeaderNode)] + search
+					elif node.level < 3:
+						search = [kid for kid in node.children if isinstance(kid, srd.HeaderNode)] + search
 
 	def do_time(self, arguments):
 		"""

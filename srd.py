@@ -13,6 +13,8 @@ SRD: A collection of information from the SRD. (object)
 import collections
 import re
 
+import creature
+
 class Node(object):
 	"""
 	A node in a document tree. (object)
@@ -211,6 +213,11 @@ class SRD(object):
 	"""
 	A collection of information from the SRD. (object)
 
+	Attributes:
+	chapters: The different files in the SRD. (dict of str: Node)
+	headers: The header nodes in the document. (dict of str: list of HeaderNode)
+	zoo: The creatures in the various chapters. (dict of str: Creature)
+
 	Class Attributes:
 	file_names: The names of the SRD files. (list of str)
 
@@ -236,9 +243,12 @@ class SRD(object):
 		folder: The local folder the SRD is stored in. (str)
 		"""
 		self.chapters = {}
+		self.zoo = {}
 		self.headers = collections.defaultdict(list)
 		for name, lines in self.read_files(folder).items():
 			self.chapters[name] = self.parse_file(lines)
+		for chapter in self.chapters.values():
+			self.parse_creatures(chapter)
 
 	def header_search(self, terms):
 		"""
@@ -252,6 +262,24 @@ class SRD(object):
 		for chapter in self.chapters.values():
 			matches.extend(chapter.header_search(terms))
 		return matches
+
+	def parse_creatures(self, node):
+		"""
+		Parse a node for creatures. (None)
+
+		Parameters:
+		node: The node to parse for creatures. (HeaderNode)
+		"""
+		search = [node]
+		while search:
+			node = search.pop()
+			if node.level < 4 and node.children:
+				intro = node.children[0]
+				if isinstance(intro, TextNode) and intro.lines[0][:5] in creature.Creature.sizes:
+					monster = creature.Creature(node)
+					self.zoo[monster.name] = monster
+				elif node.level < 3:
+					search.extend([kid for kid in node.children if isinstance(kid, HeaderNode)])
 
 	def parse_file(self, lines):
 		"""

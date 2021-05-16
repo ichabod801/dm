@@ -16,6 +16,7 @@ import re
 import textwrap
 import traceback
 
+import creature
 import dice
 import srd
 import gtime
@@ -32,7 +33,7 @@ increments. You can also set alarms in game time to alert you of events that
 should happen, using the alarm command.
 
 You can store notes about the game with the note command, and later review them
-with the study command. You can also search the Source Resource Documents with
+with the study command. You can also search the Source Resource Document with
 the srd command.
 """
 
@@ -391,6 +392,25 @@ class Egor(cmd.Cmd):
 					print(self.notes[note_index])
 			else:
 				print(f'I do not know the tag {arguments!r}, master.')
+
+	def do_test(self, arguments):
+		"""
+		Test code used during development. (None)
+		"""
+		if arguments == 'monsters':
+			self.zoo = {}
+			sizes = ('*Tiny', '*Smal', '*Medi', '*Larg', '*Huge', '*Garg')
+			search = [self.srd.chapters['monsters']]
+			while search:
+				node = search.pop()
+				if node.level in (2, 3):
+					intro = node.children[0]
+					if isinstance(intro, srd.TextNode) and intro.lines[0][:5] in sizes:
+						print(intro.parent)
+						monster = creature.Creature(node)
+						self.zoo[monster.name] = monster
+				if node.level < 3:
+					search = [kid for kid in node.children if isinstance(kid, srd.HeaderNode)] + search
 
 	def do_time(self, arguments):
 		"""

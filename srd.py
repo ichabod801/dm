@@ -333,7 +333,7 @@ class SRD(object):
 		for file_name in os.listdir(folder):
 			if file_name[:2].isdigit() and file_name.endswith('.md'):
 				with open(f'{folder}/{file_name}') as srd_file:
-					chapters[file_name[3:]] = srd_file.read().split('\n')
+					chapters[file_name[3:-3]] = srd_file.read().split('\n')
 		return chapters
 
 	def text_search(self, terms):

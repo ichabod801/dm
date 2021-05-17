@@ -8,6 +8,8 @@ Attack: An attack used by a creature. (object)
 Creature: A creature for combat or information. (object)
 """
 
+import re
+
 class Attack(object):
 	"""
 	An attack used by a creature. (object)
@@ -159,11 +161,14 @@ class Creature(object):
 		"""
 		# Set the creature's name.
 		self.name = node.name
+		self.name_regex = re.compile(r'\*\*{}e?s?\*\*'.format(self.name), re.IGNORECASE)
 		# Set the creature's default attributes.
 		self.actions = {}
 		self.attacks = {}
+		self.description = ''
 		self.features = {}
 		self.legendary = {}
+		self.reactions = {}
 		# Set the Tracking variables.
 		abilities = False
 		last_key = ''
@@ -197,6 +202,8 @@ class Creature(object):
 					elif line.strip():
 						last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
 			else:
+				# !! Try to refactor these all into one.
+				# !! Otherwise descriptions are only found after actions, not reactions/legendary actions.
 				# Search through the actions section.
 				if node.name == 'Actions':
 					for child in node.children:
@@ -204,6 +211,24 @@ class Creature(object):
 							# Handle named actions.
 							if line.startswith('***'):
 								last_dict, last_key = self._parse_action(line)
+							# Add unnamed actions to the last action.
+							elif line.strip():
+								if self.name_regex.search(line):
+									self.description = line
+									last_dict = 'description'
+								elif last_dict == 'description':
+									self.description = f'{self.description}\n\n{line}'
+								elif last_dict == self.actions:
+									last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+								else:
+									last_dict[last_key].add_text(line)
+				# Search through the actions section.
+				if node.name == 'Rections':
+					for child in node.children:
+						for line in child.lines:
+							# Handle named actions.
+							if line.startswith('***'):
+								last_dict, last_key = self._parse_reaction(line)
 							# Add unnamed actions to the last action.
 							elif line.strip():
 								if last_dict == self.actions:
@@ -342,6 +367,17 @@ class Creature(object):
 		blank, name, text = line.split('**')
 		self.legendary[name] = text[1:].strip()
 		return name
+
+	def _parse_reaction(self, line):
+		"""
+		Parse one of the creature's actions. (None)
+
+		Parameters:
+		line: The line of text with an action. (str)
+		"""
+		blank, name, text = line.split('***')
+		self.reactions[name] = text[1:].strip()
+		return self.reactions, name
 
 	def _parse_senses(self, title, text):
 		"""

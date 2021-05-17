@@ -109,7 +109,7 @@ class HeaderNode(Node):
 		sub_heads = [child for child in self.children if isinstance(child, HeaderNode)]
 		# Search based on regular expression or text
 		if isinstance(terms, str):
-			matches = [child for child in sub_heads if terms == child.name.lower()]
+			matches = [child for child in sub_heads if terms.lower() == child.name.lower()]
 		else:
 			matches = [child for child in sub_heads if terms.search(child.name)]
 		# Continue the search depth first.
@@ -320,6 +320,9 @@ class SRD(object):
 					# Create a text node and switch modes.
 					text = TextNode(line)
 					mode = 'text'
+		if mode == 'text' and text not in parent.children:
+			text.strip()
+			parent.add_child(text)
 		return root
 
 	def read_files(self, folder = 'srd'):

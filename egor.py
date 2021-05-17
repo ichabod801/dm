@@ -300,7 +300,7 @@ class Egor(cmd.Cmd):
 				data_file.write('time-var: {} {}\n'.format(var, value))
 			# Save the loaded campaign, if any.
 			if self.campaign_folder:
-				data_file.write('camapaign: {}\n'.format(self.campaign_folder))
+				data_file.write('campaign: {}\n'.format(self.campaign_folder))
 		self.changes = False
 		print('I have stored all of the incantations, master.')
 

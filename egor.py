@@ -320,6 +320,8 @@ class Egor(cmd.Cmd):
 		if option == 'campaign':
 			self.campaign_folder = setting
 			self.load_campaign()
+			print(f'The campaign at {self.campaign_folder} has been loaded.')
+			self.changes = True
 		elif option == 'time-var':
 			variable, value = setting.split()
 			variable = variable.lower()

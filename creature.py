@@ -223,7 +223,7 @@ class Creature(object):
 								else:
 									last_dict[last_key].add_text(line)
 				# Search through the actions section.
-				if node.name == 'Rections':
+				if node.name == 'Reactions':
 					for child in node.children:
 						for line in child.lines:
 							# Handle named actions.
@@ -231,7 +231,7 @@ class Creature(object):
 								last_dict, last_key = self._parse_reaction(line)
 							# Add unnamed actions to the last action.
 							elif line.strip():
-								if last_dict == self.actions:
+								if last_dict == self.reactions:
 									last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
 								else:
 									last_dict[last_key].add_text(line)

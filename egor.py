@@ -309,7 +309,9 @@ class Egor(cmd.Cmd):
 		Set one of the options.
 
 		The options you can set include:
-
+		
+		* campaign: Sets the campaign folder and loads any markdown files from
+			that folder that start with two digits and a period (.).
 		* time-var: Changes or adds time variables (see the time command). Follow
 			time-var with a time variable name and a time specification, such as
 			'set time-var short-rest 5'. Setting a time variable to another time

@@ -6,9 +6,13 @@ Creatures for combat and information.
 Classes:
 Attack: An attack used by a creature. (object)
 Creature: A creature for combat or information. (object)
+DummyNode: A fake header node for creating blank creatures. (namedtuple)
 """
 
+import collections
 import re
+
+import dice
 
 class Attack(object):
 	"""
@@ -95,6 +99,8 @@ class Creature(object):
 	The full definitions for most of the creature's attributes are in the Monster
 	Manual.
 
+	!! needs copy and init methods for combat.
+
 	Attributes:
 	abilities: The creature's ability scores. (dict of str: int)
 	ac: The creature's armor class. (str)
@@ -103,12 +109,15 @@ class Creature(object):
 	alignment: The creature's alignment. (str)
 	attack: The creature's attack actions. (dict of str: Attack)
 	bonuses: The creature's ability bonuses. (dict of str: int)
+	condtions: Any conditions affecting the creature, with timers. (list of tuple)
 	cr: The creature's challenge rating. (int)
 	features: Non-action features of the creature. (dict of str: str)
 	hp: The creature's current hit points. (int)
 	hp_max: The creature's maximum hit points. (int)
 	hp_roll: The roll specification to determine the creature's hit points. (str)
 	hp_temp: The creature's temporary hit points. (int)
+	init_bonus: The creature's initiative bonus. (int)
+	initiative: The creature's current combat priority. (int)
 	language: The languages the creature can speak. (str)
 	legendary: Legendary actions the creature can take. (dict of str: str)
 	other_speeds: The creature's non-walking speeds, if any. (str)
@@ -136,6 +145,9 @@ class Creature(object):
 	_parse_skills: Parse the creature's skill bonuses. (None)
 	_parse_size: Parse the creature's size, type, sub-type, and alignment. (None)
 	_parse_speed: Parse the creature's movement speed. (None)
+	copy: Create an independent version of the creature. (Creature)
+	init: Roll initiative for the creature. (int)
+	update_conditions: Check conditions for expired ones. (None)
 
 	Overridden Methods:
 	__init__
@@ -163,12 +175,22 @@ class Creature(object):
 		self.name = node.name
 		self.name_regex = re.compile(r'\*\*{}e?s?\*\*'.format(self.name), re.IGNORECASE)
 		# Set the creature's default attributes.
+		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
 		self.actions = {}
 		self.attacks = {}
+		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
+		self.conditions = []
 		self.description = ''
 		self.features = {}
+		self.hp_roll = '20d12'
+		self.hp = 140
+		self.init_bonus = 0
+		self.initiative = 0
 		self.legendary = {}
 		self.reactions = {}
+		self.size = 'Medium'
+		self.skills = {skill: 0 for skill in self.skill_abilities}
+		self.type = 'unknown'
 		# Set the Tracking variables.
 		abilities = False
 		last_key = ''
@@ -276,6 +298,8 @@ class Creature(object):
 		# Get the default skill bonuses.
 		for skill, ability in self.skill_abilities.items():
 			self.skills[skill] = self.bonuses[ability]
+		# Set the initiative bonus.
+		self.init_bonus = self.bonuses['dex']
 
 	def _parse_ac(self, title, text):
 		"""
@@ -457,3 +481,34 @@ class Creature(object):
 		else:
 			self.speed = int(text.split()[0])
 			self.other_speeds = ''
+
+	def copy(self, name = ''):
+		"""
+		Create an independent copy of the creature. (Creature)
+
+		Parameters:
+		name: The name for the new creature. (str)
+		"""
+		if not name:
+			name = self.name
+		clone = Creature(DummyNode(name, []))
+		clone.__dict__ = self.__dict__.copy()
+		clone.hp = dice.roll(clone.hp_roll)
+		clone.hp_max = clone.hp
+		return clone
+
+	def init(self):
+		"""Roll initiative for the creature. (int)"""
+		self.initiative = dice.d20() + self.init_bonus
+		return self.initiative
+
+	def update_conditions(self):
+		"""
+		Update condition timers, and remove finished conditions. (None)
+		"""
+		for condition in self.conditions:
+			condition[1] -= 1
+		self.conditions = [condition for condition in self.conditions if condition[1]]
+
+# A fake header node for creating blank creatures.
+DummyNode = collections.namedtuple('DummyNode', ('name', 'children'))

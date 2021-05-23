@@ -46,8 +46,15 @@ class Egor(cmd.Cmd):
 	campaign: The loaded campaign information. (SRD)
 	campaign_folder: A path to the folder with the campaign files. (str)
 	changes: A flag for changes in the game state. (bool)
+	combatants: The creatures in the current combat. (dict of str: Creature)
+	encounters: Preset encounters. (dict of str: tuple)
+	init: The initiative order for the current combat. (list of Creature)
+	init_count: The current actor in combat. (int)
+	pcs: The player characters in the campaign. (dict of str: Creature)
+	round: The number of the current combat round. (int)
 	srd: The stored Source Resource Document for D&D. (SRD)
 	time: The current game time. (gtime.Time)
+	zoo: The creatures loaded for combat. (dict of str: Creature)
 
 	Class Attributes:
 	aliases: Different names for commands. (dict of str: str)
@@ -59,6 +66,7 @@ class Egor(cmd.Cmd):
 	alarm_check: Check for any alarms that should have gone off. (None)
 	do_alarm: Set an alarm. (None)
 	do_day: Advance the time by day increments. (None)
+	do_next: Show the next person in the initiative queue. (None)
 	do_note: Record a note. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
@@ -81,7 +89,7 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'n': 'note', 'q': 'quit', 'r': 'roll', 't': 'time'}
+	aliases = {'&': 'note', 'init': 'initiative', 'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
@@ -232,9 +240,131 @@ class Egor(cmd.Cmd):
 		else:
 			print("I can't help you with that.")
 
+	def do_initiative(self, arguments):
+		"""
+		Start a combat by rolling initiative. (init)
+
+		Using 'add' or '+' in the arguments means you want to add creatures to the
+		current initiative. Using 'encounter' or '&' in the arguments means you
+		wish to use a predefined encounter.
+
+		These must be separate words, so '&+' will not be recongized, but '& +'
+		will be.
+
+		You will be asked for the initiative for any PCs. If you do not enter a
+		value, the system will roll the initiative for that character. This is 
+		useful for NPCs.
+		"""
+		# !! refactor for size
+		# Parse the arguments.
+		arg_words = arguments.split()
+		add = '+' in arg_words
+		encounter = '&' in arg_words
+		self.auto_attack = not add and 'auto' in arg_words
+		# If you are not adding, set up the initiative and the PCs.
+		if not add:
+			# Set up the initiative tracking.
+			self.init = []
+			self.combatants = self.pcs.copy()
+			self.init_count = 0
+			self.round = 1
+			# Get initiative for the PCs.
+			for name, pc in self.combatants.items():
+				init = input(f'Initiative for {name.capitalize()}? ')
+				# Roll initiative if none given.
+				if init.strip():
+					pc.initiative = int(init)
+				else:
+					pc.init()
+				self.init.append(pc)
+		# Get and add an encounter if requested.
+		if encounter:
+			enc_name = input('Encounter name: ')
+			for name, count in self.encounters[enc_name.strip().lower()]:
+				data = self.zoo[name]
+				for bad_guy in range(count):
+					if count > 1:
+						sub_name = f'{name}-{bad_guy + 1}'
+					else:
+						sub_name = name
+					npc = data.copy(sub_name)
+					npc.init()
+					self.init.append(npc)
+					self.combatants[npc.name.lower()] = npc
+		# Otherwise get the monsters from the DM.
+		else:
+			while True:
+				# Get the monster.
+				name = input('Bad guy name: ')
+				if not name.strip():
+					break
+				name = name.replace(' ', '-')
+				# Get the number of monsters.
+				# !! needs groups, do with one in the init, no number, all in combatants.
+				count = input('Number of bad guys: ')
+				if count.strip():
+					count = int(count)
+				else:
+					count = 1
+				# Find the monster's stats.
+				if name.lower() in self.zoo:
+					data = self.zoo[name.lower()]
+				else:
+					# Ask for the initiative bonus if you can't find it.
+					# !! need a way out of this for mistakes.
+					init = int(input('Bad guy initiative bonus: '))
+					data = creature.Creature(srd.HeaderNode(f'# {name}'))
+					data.init_bonus = init
+				# Create an roll initiative for the bad guys.
+				for bad_guy in range(count):
+					# Number the bad guys if there's more than one.
+					if count > 1:
+						sub_name = f'{name}-{bad_guy + 1}'
+					else:
+						sub_name = name
+					npc = data.copy(sub_name)
+					#npc = creature.Creature(sub_name, data)
+					npc.init()
+					self.init.append(npc)
+					self.combatants[npc.name.lower()] = npc
+		# Sort by the initiative rolls.
+		if add:
+			# Save the current point in combat, if adding to the combat.
+			current = self.init[self.init_count]
+			self.init.sort(key = lambda c: (c.initiative, c.bonuses['dex']), reverse = True)
+			self.init_count = self.init.index(current)
+		else:
+			self.init.sort(key = lambda c: (c.initiative, c.bonuses['dex']), reverse = True)
+		# Inform the DM of the initiative start.
+		# !! refactor with next command, and make display clearer.
+		print()
+		print(f'{self.init[self.init_count]!r} has the initiative.')
+		print()
+		print(self.init[self.init_count])
+
+	def do_next(self, arguments):
+		"""
+		Show the next person in the initiative queue. (n)
+		"""
+		self.init_count += 1
+		if self.init_count >= len(self.init):
+			self.init_count = 0
+			self.round += 1
+			print(f'It is now round {self.round}.\n')
+		combatant = self.init[self.init_count]
+		combatant.update_conditions()
+		print(combatant)
+		print()
+		if self.auto_attack:
+			combatant.auto_attack()
+			print()
+		others = list(enumerate(self.init, start = 1))
+		for index, combatant in others[(self.init_count + 1):] + others[:self.init_count]:
+			print(f'{index}: {repr(combatant)}')
+
 	def do_note(self, arguments):
 		"""
-		Record a note. (n)
+		Record a note. (&)
 
 		Write a note to yourself. Notes can later be read with the study command.
 
@@ -472,6 +602,8 @@ class Egor(cmd.Cmd):
 	def load_campaign(self):
 		"""Load stored campaign data. (None)"""
 		self.campaign = srd.SRD(self.campaign_folder)
+		self.zoo.update(self.campaign.zoo)
+		self.pcs = self.campaign.pcs
 
 	def load_data(self):
 		"""Load any stored state data. (None)"""
@@ -541,10 +673,12 @@ class Egor(cmd.Cmd):
 		"""Set up the interface. (None)"""
 		# Load the SRD.
 		self.srd = srd.SRD()
+		self.zoo = self.srd.zoo.copy()
 		# Set the default state.
 		self.alarms = []
 		self.campaign_folder = ''
 		self.changes = False
+		self.encounters = []
 		self.notes = []
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()

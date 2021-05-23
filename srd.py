@@ -217,6 +217,7 @@ class SRD(object):
 	Attributes:
 	chapters: The different files in the SRD. (dict of str: Node)
 	headers: The header nodes in the document. (dict of str: list of HeaderNode)
+	pcs: The creatures from the Player Characters chapter. (dict of str: Creature)
 	zoo: The creatures in the various chapters. (dict of str: Creature)
 
 	Class Attributes:
@@ -244,6 +245,7 @@ class SRD(object):
 		folder: The local folder the SRD is stored in. (str)
 		"""
 		self.chapters = {}
+		self.pcs = {}
 		self.zoo = {}
 		self.headers = collections.defaultdict(list)
 		for name, lines in self.read_files(folder).items():
@@ -271,6 +273,7 @@ class SRD(object):
 		Parameters:
 		node: The node to parse for creatures. (HeaderNode)
 		"""
+		target = self.pcs if node.name.lower() == 'player characters' else self.zoo
 		search = [node]
 		while search:
 			node = search.pop()
@@ -278,7 +281,7 @@ class SRD(object):
 				intro = node.children[0]
 				if isinstance(intro, TextNode) and intro.lines[0][:5] in creature.Creature.sizes:
 					monster = creature.Creature(node)
-					self.zoo[monster.name] = monster
+					target[monster.name.lower()] = monster
 				elif node.level < 3:
 					search.extend([kid for kid in node.children if isinstance(kid, HeaderNode)])
 

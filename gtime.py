@@ -7,9 +7,14 @@ Classes:
 Alarm: An event that triggers at a given time. (object)
 AlarmByEvent: An alarm that is triggered by a specific event. (Alarm)
 AlarmByTime: An alarm that is triggered at a specific time. (Alarm)
+Calendar: A system for giving a unique identifier to each day. (object)
+Cycle: A repeating sequence of defined periods in a calendar. (object)
+Deviation: A change from the normal number of days in a period. (namedtuple)
+Period: A named set of days within a calendar cycle. (namedtuple)
 Time: A time, precise to the minute, with months. (object)
 """
 
+import collections
 import functools
 import re
 
@@ -156,6 +161,181 @@ class AlarmByTime(Alarm):
 		else:
 			repeat = Time.from_str(repeat.replace('-', ' '))
 		return AlarmByTime(trigger, note, repeat)
+
+class Calendar(object):
+	"""
+	A system for giving a unique identifier to each day. (object)
+
+	Attributes:
+	cycles: The cycles of the calendar. (list of Cycle)
+	description: A description of the calendar. (str)
+	formats: Different ways to print the date. (dict of str: str)
+	name: The name of the calendar. (str)
+	one_index: A flag for the year being one indexed. (bool)
+
+	Methods:
+	get_negative_year: Create a table of days in a year below 0. (list of dict)
+	get_year: Create a table of days in a given year. (list of dict)
+
+	Overridden Methods:
+	__init__
+	"""
+
+	def __init__(self, node):
+		"""
+		Parse the calendar's definition. (None)
+
+		Parameters:
+		node: The document section contianing the definition. (HeaderNode)
+		"""
+		# Set the default values of the attributes.
+		self.name = node.name.replace('Calendar', '').strip()
+		self.description = node.name
+		self.one_index = True
+		self.cycles = []
+		self.formats = {}
+		# Read the markdown specification of the calendar.
+		for child in node.children:
+			# Parse out text nodes.
+			if hasattr(child, 'lines'):
+				for line in child.lines:
+					low_line = line.lower()
+					# Parse the end of year specification.
+					if low_line.startswith('**new year**'):
+						self.new_year = low_line[13:].strip()
+						if self.new_year.isdigit():
+							self.new_year = int(self.new_year)
+					# Parse the first year flag.
+					elif low_line.startswith('**one index**'):
+						self.one_index = low_line[13:].strip() in ('true', 'yes')
+					# Assume everything else is part of the description.
+					else:
+						self.description = '{}\n\n{}'.format(self.description, line)
+			# Parse the cycles that make up the calendar.
+			elif child.name == 'Cycles':
+				for cycle_node in child.nodes:
+					self.cycles.append(Cycle(cycle_node))
+			# Parse the way to state a give date.
+			elif child.name == 'Formats':
+				for line in child.children[0]:
+					blank, name, format_text = line.split('**')
+					self.formats[name] == format_text.strip()
+		# Make sure there is a default date format.
+		if 'default' not in self.formats:
+			default = ', '.join([cycle.format_text for cycle in self.cycles] + ['{year}'])
+
+	def get_negative_year(self, year):
+		"""
+		Create a table of days in a given year below 0. (list of dict)
+
+		Note that get_year can handle negative years by calling this method.
+
+		Parameters:
+		year: The year to get a table of days for. (int).
+		"""
+		# Confirm the year is negative.
+
+	def get_year(self, year):
+		"""
+		Create a table of days in a given year. (list of dict)
+
+		Parameters:
+		year: The year to get a table of days for. (int).
+		"""
+		# check for getting a negative year.
+		# Get the first year.
+		# loop through the years.
+			# Get the cycles for the year.
+			# Get the year length.
+			# Run all cycles through that length.
+
+class Cycle(object):
+	"""
+	A repeating sequence of defined periods in a calendar. (object)
+
+	Cycles include things like weeks, months, and zodiacs.
+
+	Attributes:
+	description: A description of the cycle. (str)
+	deviation: The exceptions to the standard period definitions. (str)
+	format_text: The default text formatting for the cycle. (str)
+	name: The name of the cycle. (str)
+	periods: The periods that make up the cycle. (tuple)
+	singular: The singular form of the name, for formatting. (str)
+	zero: The day the cycle starts. (Time)
+
+	Methods:
+	backward: Move backward the given number of days in the cycle. (None)
+	forward: Move forward the given number of days in the cycle. (None)
+	year_periods: Determine the periods for a given year. (None)
+
+	Overridden Methods:
+	__init__
+	"""
+
+	def __init__(self, node):
+		"""
+		Parse the cycle's definition. (None)
+
+		Parameters:
+		node: The document section contianing the definition. (HeaderNode)
+		"""
+		# Set the default values of the attributes.
+		self.name = node.name
+		self.description = ''
+		self.periods = {}
+		self.deviations = []
+		self.start = 1
+		# Parse out the lines of the definition.
+		table = []
+		for line in node.children[0]:
+			# Assume pipe-table lines define the periods.
+			if line.startswith('|'):
+				table.append(line)
+			# Parse out deviations.
+			elif line.lower().startswith('**deviation**'):
+				period, new_value, method, divisor, *remainders = line[13:].split(',')
+				divisor = int(divisor)
+				remainers = [int(word) for word in remainders]
+				function = lambda data: data[method.strip()] % divisor in remainders
+				self.deviations.append(Deviation(period.strip(), int(new_value), function))
+			elif line.lower().startswith('**start**'):
+				self.start = int(line[9:])
+		# Parse out the periods.
+		for line in table[2:]:
+			name, abbreviation, number, days = line.split('|')[1:]
+			self.periods[name.strip()] = {'abbreviation': abbreviation.strip(), 'number': int(number)}
+			self.periods[name.strip()]['days'] = float(days)
+		# Get the default text formatting.
+		header = table[0].split('|')
+		self.singular = header[1]
+		if max(period.number for period in self.periods) == 1:
+			self.format_text = f'{{{self.singular}}}'
+		else:
+			self.format_text = f'{{{self.singular}}} {{{self.singular}-day}}'
+		# Get the initial state of the cycle.
+		self.state = {'cycle-day': self.start, 'cycle': 1, 'year': 1, 'periods': self.get_periods(1, 1)}
+
+	def get_periods(self, cycle, year):
+		"""
+		Get the periods for a certain year and cycle. (list of tuple)
+
+		Parameters:
+		cycle: The number of the current cycle. (int)
+		year: The number of the current year. (int)
+		"""
+		data = {'cycle': cycle, 'year': year}
+		periods = {name: spec.copy() for name, spec in self.periods}
+		for deviation in self.deviations:
+			if deviation.function(data):
+				periods[deviation.period] = period.new_value
+		return periods
+
+# A change from the normal number of days in a period. (namedtuple)
+Deviation = collections.namedtuple('Deviation', ('period', 'new_value', 'function'))
+
+# A named set of days within a calendar cycle. (namedtuple)
+Period = collections.namedtuple('Period', ('name', 'abbreviation', 'number', 'days'))
 
 @functools.total_ordering
 class Time(object):

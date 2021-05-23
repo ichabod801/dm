@@ -539,6 +539,7 @@ class Creature(object):
 			name = self.name
 		clone = Creature(DummyNode(name, []))
 		clone.__dict__ = self.__dict__.copy()
+		clone.name = name
 		clone.hp = dice.roll(clone.hp_roll)
 		clone.hp_max = clone.hp
 		return clone

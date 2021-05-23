@@ -359,7 +359,6 @@ class Egor(cmd.Cmd):
 		if self.init_count >= len(self.init):
 			self.init_count = 0
 			self.round += 1
-			print(f'It is now round {self.round}.\n')
 		combatant = self.init[self.init_count]
 		combatant.update_conditions()
 		self.combat_text()

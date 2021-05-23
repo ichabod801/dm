@@ -513,12 +513,14 @@ class Creature(object):
 		if self.features:
 			lines.append('Features:')
 			for title, text in self.features.items():
+				text = text.replace('\n\n', '\n      ')
 				lines.append(f'   {title}: {text}')
 			lines.append('')
 		# Set up actions:
 		if self.actions:
 			lines.append(f'Actions:')
 			for title, text in self.actions.items():
+				text = text.replace('\n\n', '\n      ')
 				lines.append(f'   {title}: {text}')
 			lines.append('')
 		# Set up attacks:

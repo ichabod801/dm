@@ -194,6 +194,8 @@ class Creature(object):
 		self.reactions = {}
 		self.size = 'Medium'
 		self.skills = {skill: 0 for skill in self.skill_abilities}
+		self.speed = 30
+		self.other_speeds = ''
 		self.type = 'unknown'
 		# Set the Tracking variables.
 		abilities = False

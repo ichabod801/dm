@@ -99,8 +99,6 @@ class Creature(object):
 	The full definitions for most of the creature's attributes are in the Monster
 	Manual.
 
-	!! needs copy and init methods for combat.
-
 	Attributes:
 	abilities: The creature's ability scores. (dict of str: int)
 	ac: The creature's armor class. (str)
@@ -130,7 +128,9 @@ class Creature(object):
 	xp: The creature's experience point value. (int)
 
 	Class Attributes:
+	letters: Letters for identifying attacks. (str)
 	sizes: The valid starts of the size/type/alignment line. (tuple of str)
+	skill_abilities: The ability bonus for each skill. (tuple of str: str)
 	two_start: Parser names for lines starting with '**'. (dict of str: str)
 
 	Methods:
@@ -145,6 +145,7 @@ class Creature(object):
 	_parse_skills: Parse the creature's skill bonuses. (None)
 	_parse_size: Parse the creature's size, type, sub-type, and alignment. (None)
 	_parse_speed: Parse the creature's movement speed. (None)
+	combat_text: Text representation for their turn in combat. (str)
 	copy: Create an independent version of the creature. (Creature)
 	init: Roll initiative for the creature. (int)
 	update_conditions: Check conditions for expired ones. (None)
@@ -152,8 +153,10 @@ class Creature(object):
 	Overridden Methods:
 	__init__
 	__repr__
+	__str__
 	"""
 
+	letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 	sizes = ('*Tiny', '*Smal', '*Medi', '*Larg', '*Huge', '*Garg')
 	skill_abilities = {'acrobatics': 'dex', 'arcana': 'int', 'animal-handling': 'wis', 'athletics': 'str',
 		'deception': 'cha', 'history': 'int', 'insight': 'wis', 'intimidation': 'cha', 
@@ -171,8 +174,9 @@ class Creature(object):
 		Parameters:
 		node: The creature's header node in a SRD style document. (HeaderNode)
 		"""
+		# !! refactor
 		# Set the creature's name.
-		self.name = node.name
+		self.name = node.name.strip()
 		self.name_regex = re.compile(r'\*\*{}e?s?\*\*'.format(self.name), re.IGNORECASE)
 		# Set the creature's default attributes.
 		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
@@ -227,7 +231,7 @@ class Creature(object):
 				# !! Try to refactor these all into one.
 				# !! Otherwise descriptions are only found after actions, not reactions/legendary actions.
 				# Search through the actions section.
-				if node.name == 'Actions':
+				if node.name.strip() == 'Actions':
 					for child in node.children:
 						for line in child.lines:
 							# Handle named actions.
@@ -278,6 +282,13 @@ class Creature(object):
 	def __repr__(self):
 		"""Debugging text representation. (str)"""
 		return f'<Creature {self.name}, {self.size} {self.type}>'
+
+	def __str__(self):
+		"""Human readable text representation. (str)"""
+		text = f'{self.name}; {self.hp}/{self.hp_max}'
+		if self.conditions:
+			text = '{}; {}'.format(text, ', '.join(self.condtions))
+		return text
 
 	def _parse_abilities(self, line):
 		"""
@@ -481,6 +492,39 @@ class Creature(object):
 		else:
 			self.speed = int(text.split()[0])
 			self.other_speeds = ''
+
+	def combat_text(self):
+		"""Text representation for their turn in combat. (str)"""
+		# Set up header.
+		lines = [self.name]
+		if self.conditions:
+			lines.append(', '.join(self.conditions))
+		lines.append('')
+		# Set up speed/hp section.
+		speed_text = f'Speed: {self.speed} ft.'
+		if self.other_speeds:
+			speed_text = f'{speed_text}; {self.other_speeds}'
+		lines.append(speed_text)
+		lines.append(f'HP: {self.hp}/{self.hp_max}')
+		lines.append('')
+		# Set up features:
+		if self.features:
+			lines.append('Features:')
+			for title, text in self.features.items():
+				lines.append(f'   {title}: {text}')
+			lines.append('')
+		# Set up actions:
+		if self.actions:
+			lines.append(f'Actions:')
+			for title, text in self.actions.items():
+				lines.append(f'   {title}: {text}')
+			lines.append('')
+		# Set up attacks:
+		lines.append('Attacks:')
+		for letter, attack in zip(self.letters, self.attacks):
+			lines.append(f'   {letter}: {attack}')
+		# Combine the lines.
+		return '\n'.join(lines)
 
 	def copy(self, name = ''):
 		"""

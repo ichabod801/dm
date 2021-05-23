@@ -64,6 +64,7 @@ class Egor(cmd.Cmd):
 
 	Methods:
 	alarm_check: Check for any alarms that should have gone off. (None)
+	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
 	do_day: Advance the time by day increments. (None)
 	do_next: Show the next person in the initiative queue. (None)
@@ -106,6 +107,17 @@ class Egor(cmd.Cmd):
 		for alarm in self.alarms:
 			alarm.check(time_spec, self.time)
 		self.alarms = [alarm for alarm in self.alarms if not alarm.done]
+
+	def combat_text(self):
+		"""Print a summary of the current combat. (None)"""
+		if self.init_count == 0:
+			print(f'It is now Round {self.round}')
+			print('-------------------\n')
+		print(self.init[self.init_count].combat_text())
+		print('\n-------------------\n')
+		by_number = list(enumerate((str(combatant) for combatant in self.init), start = 1))
+		for index, combatant in by_number[(self.init_count + 1):] + by_number[:self.init_count]:
+			print(f'{index}: {combatant}')
 
 	def default(self, line):
 		"""
@@ -336,11 +348,8 @@ class Egor(cmd.Cmd):
 		else:
 			self.init.sort(key = lambda c: (c.initiative, c.bonuses['dex']), reverse = True)
 		# Inform the DM of the initiative start.
-		# !! refactor with next command, and make display clearer.
 		print()
-		print(f'{self.init[self.init_count]!r} has the initiative.')
-		print()
-		print(self.init[self.init_count])
+		self.combat_text()
 
 	def do_next(self, arguments):
 		"""
@@ -353,14 +362,7 @@ class Egor(cmd.Cmd):
 			print(f'It is now round {self.round}.\n')
 		combatant = self.init[self.init_count]
 		combatant.update_conditions()
-		print(combatant)
-		print()
-		if self.auto_attack:
-			combatant.auto_attack()
-			print()
-		others = list(enumerate(self.init, start = 1))
-		for index, combatant in others[(self.init_count + 1):] + others[:self.init_count]:
-			print(f'{index}: {repr(combatant)}')
+		self.combat_text()
 
 	def do_note(self, arguments):
 		"""

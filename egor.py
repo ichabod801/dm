@@ -438,6 +438,26 @@ class Egor(cmd.Cmd):
 		print()
 		self.combat_text()
 
+	def do_kill(self, arguments):
+		"""
+		Remove a creature from the initiative order.
+		"""
+		# Find the creature.
+		creature = self.get_creature(arguments.lower(), 'combat')
+		for death_index, living in enumerate(self.init):
+			if living.name.lower() == creature.name.lower():
+				break
+		else:
+			# Print a warning if you can't find the creature.
+			print(f'No creature named {arguments!r} was found.')
+			return
+		# Remove the creature.
+		del self.init[death_index]
+		if death_index < self.init_count:
+			self.init_count -= 1
+		# Show the current status.
+		self.combat_text()
+
 	def do_next(self, arguments):
 		"""
 		Show the next person in the initiative queue. (n)

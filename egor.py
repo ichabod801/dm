@@ -303,6 +303,42 @@ class Egor(cmd.Cmd):
 		else:
 			print("I can't help you with that.")
 
+	def do_heal(self, arguments):
+		"""
+		Heal a creature.
+
+		The arguments are a creature name or initiative order number, and a number
+		of points of healing for that creature.
+		"""
+		target_id, healing = arguments.split()
+		target = self.get_creature(target_id)
+		target.hp = min(target.hp + int(healing), target.hp_max)
+		print(f'{target.name} now has {target.hp} HP.')
+
+	def do_hit(self, arguments):
+		"""
+		Do damage to a creature.
+
+		The arguments are a creature name or initiative order number, and a number
+		of points of damage to do to that creature.
+		"""
+		target_id, damage = arguments.split()
+		target = self.get_creature(target_id)
+		target.hp = max(target.hp - int(damage), 0)
+		print(f'{target.name} now has {target.hp} HP.')
+
+	def do_hp(self, arguments):
+		"""
+		Set a creature's hit points.
+
+		The arguments are a creature name or initiative order number, and a number
+		of points of damage to do to that creature.
+		"""
+		target_id, hp = arguments.split()
+		target = self.get_creature(target_id)
+		target.hp = min(int(hp), target.hp_max)
+		print(f'{target.name} now has {target.hp} HP.')
+
 	def do_initiative(self, arguments):
 		"""
 		Start a combat by rolling initiative. (init)

@@ -266,6 +266,8 @@ class Creature(object):
 		self.features = {}
 		self.hp_roll = '20d12'
 		self.hp = 140
+		self.hp_max = 140
+		self.hp_temp = 0
 		self.init_bonus = 0
 		self.initiative = 0
 		self.legendary = {}

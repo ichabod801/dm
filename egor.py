@@ -34,7 +34,12 @@ should happen, using the alarm command.
 
 You can store notes about the game with the note command, and later review them
 with the study command. You can also search the Source Resource Document with
-the srd command.
+the srd command. You can add your own campaign files in markdown format, and
+they can be loaded as well.
+
+The initiative command will allow you to set up an order for combat, using 
+creatures and player characters loaded from the SRD and your campaign files.
+The next command can be used to advance the initiative count.
 """
 
 class Egor(cmd.Cmd):
@@ -76,6 +81,7 @@ class Egor(cmd.Cmd):
 	do_srd: Search the Source Resource Document. (None)
 	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
+	get_creature: Get a creature to apply a command to. (Creature)
 	load_campaign: Load stored campaign data. (None)
 	load_data: Load any stored state data. (None)
 	new_note: Store a note. (None)
@@ -90,7 +96,8 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'&': 'note', 'init': 'initiative', 'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time'}
+	aliases = {'@': 'attack', '&': 'note', 'init': 'initiative', 'n': 'next', 'q': 'quit', 'r': 'roll', 
+		't': 'time'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
@@ -189,6 +196,50 @@ class Egor(cmd.Cmd):
 			self.changes = True
 			# Update the user.
 			print(f'Alarm set for {alarm.trigger}.')
+
+	def do_attack(self, arguments):
+		"""
+		Have the current combatant attack another one. (@)
+
+		The first two arguments must be the name of the target and the name of the 
+		attack. The target may be identified by their number in the initiative order.
+		The attack may be identified by it's letter in the creature's attack section.
+		If no attack is specified, the creature's first attack will be used. If any 
+		optional arguments are used, the attack used must be specified.
+
+		Advantage or disadvantage for the attack may be given by 'ad', 'advantage',
+		'dis', or 'disadvantage' as an optional argument. Any numeric optional 
+		argument will be treated as a temporary bonus or penalty to the attack roll.
+		"""
+		# Parse the attack and the target.
+		words = arguments.split()
+		target = words[0]
+		attack = words[1] if len(words) > 1 else ''
+		# Parse any optional arguments.
+		advantage = 0
+		bonus = 0
+		for word in words[2:]:
+			check = word.lower()
+			if check in ('ad', 'advantage'):
+				advantage = 1
+			elif check in ('dis', 'disadvantage'):
+				advantage = -1
+			elif check.isdigit() or check[0] in ('+', '-') and check[1:].isdigit():
+				bonus = int(check)
+		# Get the creatures involved in the attack.
+		target = self.get_creature(target, 'combat')
+		attacker = self.init[self.init_count]
+		# Make the attack
+		try:
+			total, text = attacker.attack(target, attack, advantage, bonus)
+		except ValueError:
+			# Handle attack errors.
+			print(f'{attacker.name} does not have an attack named {attack!r}')
+			print(f'{attacker.name} has the following attacks:')
+			for letter, attack in zip(creature.Creature.letters, attacker.attacks):
+				print(f'   {letter}: {attack}')
+			return
+		print(text)
 
 	def do_day(self, arguments):
 		"""
@@ -307,8 +358,8 @@ class Egor(cmd.Cmd):
 		else:
 			while True:
 				# Get the monster.
-				name = input('Bad guy name: ')
-				if not name.strip():
+				name = input('Bad guy name: ').strip()
+				if not name:
 					break
 				name = name.replace(' ', '-')
 				# Get the number of monsters.
@@ -599,6 +650,27 @@ class Egor(cmd.Cmd):
 		print(self.time)
 		if words:
 			self.alarm_check(time_spec)
+
+	def get_creature(self, creature, context = 'open'):
+		"""
+		Get a creature to apply a command to. (Creature)
+
+		Parameters:
+		creature: The identifier of the creature. (str)
+		scope: How narrow/broad the search should be. (str)
+		"""
+		if creature.lower() in self.combatants:
+			creature = self.combatants[creature.lower()]
+		elif creature.isdigit():
+			try:
+				creature = self.init[int(creature) - 1]
+			except ValueError:
+				ValueError('Creature index out of range')
+		elif context == 'open' and creature.lower() in self.zoo:
+			creature = self.zoo[creature.lower()]
+		else:
+			ValueError(f'No creature named {creature!r} was found.')
+		return creature
 
 	def load_campaign(self):
 		"""Load stored campaign data. (None)"""

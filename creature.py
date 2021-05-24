@@ -33,6 +33,7 @@ class Attack(object):
 
 	Methods:
 	add_text: Add further explanatory text to the attack. (None)
+	attack: Make the attack. (tuple of int, str)
 
 	Overridden Methods:
 	__init__
@@ -90,7 +91,54 @@ class Attack(object):
 		Parameters:
 		text: The extra explanatory text. (str)
 		"""
-		self.additional = '{}\n\n{}'.format(self.text, text)
+		self.additional = '{}\n\n{}'.format(self.additional, text)
+
+	def attack(self, target, advantage = 0, temp_bonus = 0):
+		"""
+		Make the attack. (tuple of int, str)
+
+		The return value is the total damage and text describing the damage.
+
+		Parameters:
+		target: The target of the attack. (Creature)
+		advantage: The advantage or disadvantage for the attack. (int)
+		temp_bonus: A temporary bonus to the to hit roll. (int)
+		"""
+		# Make the attack roll.
+		hit_roll = dice.d20(advantage)
+		total_bonus = self.bonus + temp_bonus
+		# Handle fumbles.
+		if hit_roll == 1:
+			total = 0
+			text = 'Fumble'
+		# Handle hits.
+		elif hit_roll == 20 or hit_roll + total_bonus >= target.ac + target.ac_mod:
+			# Get the damage.
+			text_bits = []
+			total = 0
+			for roll, damage in self.damage:
+				sub_total = dice.roll(roll)
+				if hit_roll == 20:
+					sub_total += dice.roll(roll)
+				s = '' if sub_total == 1 else 's'
+				text_bits.append(f'{sub_total} point{s} of {damage} damage')
+				total += sub_total
+			target.hp = max(0, target.hp - total)
+			print(f'{target.name.capitalize()} has {target.hp} hit points left.')
+			# Create the text description.
+			hit_type = 'Critical hit' if hit_roll == 20 else f'Hit ({hit_roll} + {total_bonus})'
+			if len(text_bits) == 1:
+				text = f'{hit_type} for {text_bits[0]}'
+			else:
+				s = '' if total == 1 else 's'
+				text = f"{hit_type} for {total} point{s}; {', '.join(text_bits)}"
+			if self.additional:
+				text += f'; {self.additional}'
+		# Handle normal misses.
+		else:
+			total = 0
+			text = f'Miss ({hit_roll} + {total_bonus})'
+		return total, text
 
 class Creature(object):
 	"""
@@ -102,6 +150,7 @@ class Creature(object):
 	Attributes:
 	abilities: The creature's ability scores. (dict of str: int)
 	ac: The creature's armor class. (str)
+	ac_mod: Any temporary modifier to armor class. (str)
 	ac_text: The text describing the reason for the creature's armor class. (str)
 	actions: Actions the creature can take. (dict of str: str)
 	alignment: The creature's alignment. (str)
@@ -145,6 +194,7 @@ class Creature(object):
 	_parse_skills: Parse the creature's skill bonuses. (None)
 	_parse_size: Parse the creature's size, type, sub-type, and alignment. (None)
 	_parse_speed: Parse the creature's movement speed. (None)
+	attack: Attack something. (tuple of int, text)
 	combat_text: Text representation for their turn in combat. (str)
 	copy: Create an independent version of the creature. (Creature)
 	init: Roll initiative for the creature. (int)
@@ -179,6 +229,8 @@ class Creature(object):
 		self.name = node.name.strip()
 		self.name_regex = re.compile(r'\*\*{}e?s?\*\*'.format(self.name), re.IGNORECASE)
 		# Set the creature's default attributes.
+		self.ac = 10
+		self.ac_mod = 0
 		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
 		self.actions = {}
 		self.attacks = {}
@@ -494,6 +546,35 @@ class Creature(object):
 		else:
 			self.speed = int(text.split()[0])
 			self.other_speeds = ''
+
+	def attack(self, target, name, advantage = 0, temp_bonus = 0):
+		"""
+		Attack something. (tuple of int, text)
+
+		Parameters:
+		target: The creature to attack. (Creature)
+		name: The name of the attack to use. (str)
+		advantage: The advantage/disadvantage for the attack. (int)
+		temp_bonus: A temporary bonus to the to hit roll. (int)
+		"""
+		# Get the attack by letter.
+		if len(name) == 1:
+			name = list(self.attacks.keys())[self.letters.index(name.upper())]
+			attack = self.attacks[name]
+		# Get the attack by name.
+		elif name:
+			name = name.lower().replace('-', ' ')
+			for attack in self.attacks.values():
+				if attack.name.lower() == name.lower():
+					break
+			else: 
+				raise ValueError('No such attack.')
+		# Get the default attack.
+		else:
+			name = list(self.attacks.keys())[0]
+			attack = self.attacks[name]
+		# Make the attack.
+		return attack.attack(target, advantage, temp_bonus)
 
 	def combat_text(self):
 		"""Text representation for their turn in combat. (str)"""

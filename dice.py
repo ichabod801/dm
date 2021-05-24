@@ -41,7 +41,6 @@ def d20(advantage = 0):
 	roll = random.randint(1, 20)
 	if advantage:
 		ad_roll = random.randint(1, 20)
-		DM_ROLLS.append(ad_roll)
 		if advantage > 0:
 			roll = max(roll, ad_roll)
 		elif advantage < 0:

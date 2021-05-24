@@ -224,6 +224,7 @@ class Creature(object):
 	combat_text: Text representation for their turn in combat. (str)
 	copy: Create an independent version of the creature. (Creature)
 	init: Roll initiative for the creature. (int)
+	save: Make a saving throw. (tuple of int, bool)
 	update_conditions: Check conditions for expired ones. (None)
 
 	Overridden Methods:
@@ -272,6 +273,7 @@ class Creature(object):
 		self.initiative = 0
 		self.legendary = {}
 		self.reactions = {}
+		self.saves = self.bonuses.copy()
 		self.size = 'Medium'
 		self.skills = {skill: 0 for skill in self.skill_abilities}
 		self.speed = 30
@@ -659,6 +661,19 @@ class Creature(object):
 		"""Roll initiative for the creature. (int)"""
 		self.initiative = dice.d20() + self.init_bonus
 		return self.initiative
+
+	def save(self, ability, dc, advantage = 0):
+		"""
+		Make a saving throw. (tuple of int, bool)
+
+		Parameters:
+		ability: The ability to use for the save. (str)
+		dc: The difficulty class for the save. (int)
+		advantage: The advantage/disadvantage for the roll. (int)
+		"""
+		bonus = self.saves[ability]
+		roll = dice.d20(advantage) + bonus
+		return roll, roll >= dc
 
 	def update_conditions(self):
 		"""

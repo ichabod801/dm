@@ -84,7 +84,7 @@ class Egor(cmd.Cmd):
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
 	do_set: Set one of the options. (None)
-	do_save: Save the current data. (None)
+	do_store: Save the current data. (None)
 	do_srd: Search the Source Resource Document. (None)
 	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
@@ -499,7 +499,7 @@ class Egor(cmd.Cmd):
 		if self.changes:
 			choice = input('But, master! The game state has changed! Shall I save it? ')
 			if choice.lower() in ('yes', 'y', 'da'):
-				self.do_save('')
+				self.do_store('')
 		return True
 
 	def do_roll(self, arguments):
@@ -527,6 +527,35 @@ class Egor(cmd.Cmd):
 			print("I don't know how to roll that, master.")
 
 	def do_save(self, arguments):
+		"""
+		Have a combatant make a saving throw.
+
+		The arguments are the name of the target, the ability for the save, and 
+		the DC of the save. An optional fourth argument can specify advantage with
+		'ad' or 'advantage' and disadvantage with 'dis' or 'disadvantage'.
+		"""
+		# Parse the arguments.
+		words = arguments.split()
+		target, ability, dc = words[:3]
+		# Get the target.
+		target = self.get_creature(target)
+		# Check for dis/advantage.
+		if len(words) > 3 and words[3].lower() in ('ad', 'advantage'):
+			advantage = 1
+		elif len(words) > 3 and words[3].lower() in ('dis', 'disadvantage'):
+			advantage = -1
+		else:
+			advantage = 0
+		print(advantage)
+		# Make the roll.
+		roll, success = target.save(ability[:3], int(dc), advantage)
+		# Report the results.
+		if success:
+			print(f'{target.name} made the save with a {roll}.')
+		else:
+			print(f'{target.name} failed the save with a {roll}.')
+
+	def do_store(self, arguments):
 		"""Save the current data."""
 		with open('dm.dat', 'w') as data_file:
 			# Save the alarms.
@@ -730,11 +759,13 @@ class Egor(cmd.Cmd):
 			try:
 				creature = self.init[int(creature) - 1]
 			except ValueError:
-				ValueError('Creature index out of range')
+				raise ValueError('Creature index out of range')
+		elif context == 'open' and creature.lower() in self.pcs:
+			creature = self.pcs[creature.lower()]
 		elif context == 'open' and creature.lower() in self.zoo:
 			creature = self.zoo[creature.lower()]
 		else:
-			ValueError(f'No creature named {creature!r} was found.')
+			raise ValueError(f'No creature named {creature!r} was found.')
 		return creature
 
 	def load_campaign(self):
@@ -816,7 +847,9 @@ class Egor(cmd.Cmd):
 		self.alarms = []
 		self.campaign_folder = ''
 		self.changes = False
+		self.combatants = {}
 		self.encounters = []
+		self.init = []
 		self.notes = []
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()

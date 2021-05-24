@@ -39,7 +39,10 @@ they can be loaded as well.
 
 The initiative command will allow you to set up an order for combat, using 
 creatures and player characters loaded from the SRD and your campaign files.
-The next command can be used to advance the initiative count.
+The next command can be used to advance the initiative count. The kill command
+removes creatures from the initiative count. The heal, hit, and hp commands
+can be use to manage the hit points of creatures. The attack command handles
+an attack from the current creature on another creature.
 """
 
 class Egor(cmd.Cmd):
@@ -72,6 +75,10 @@ class Egor(cmd.Cmd):
 	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
 	do_day: Advance the time by day increments. (None)
+	do_heal: Heal a creature. (None)
+	do_hit: Do damage to a creature. (None)
+	do_hp: Set a creature's HP. (None)
+	do_kill: Remove a creature from the initiative order. (None)
 	do_next: Show the next person in the initiative queue. (None)
 	do_note: Record a note. (None)
 	do_quit: Exit the Egor interface. (True)
@@ -441,6 +448,8 @@ class Egor(cmd.Cmd):
 	def do_kill(self, arguments):
 		"""
 		Remove a creature from the initiative order.
+
+		The argument is the name of the creature or it's order in the initiative.
 		"""
 		# Find the creature.
 		creature = self.get_creature(arguments.lower(), 'combat')

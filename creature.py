@@ -27,6 +27,7 @@ class Attack(object):
 	damage: The damage done by the attack. (list of (str, str))
 	melee: A flag for the attack being a melee attack. (bool)
 	name: The name of the attack. (str)
+	or_damage: The damage is alternatives, not combined. (bool)
 	ranged: A flag for the attack being a ranged attack. (bool)
 	text: The text describing the attack. (str)
 	spell: A flag for the attack being a spell attack. (bool)
@@ -52,10 +53,11 @@ class Attack(object):
 		# Set the text attributes.
 		self.name = title
 		self.text = text
-		# Parse the text attributes.
+		# Parse the attack type attributes.
 		self.melee = 'Melee' in self.text
 		self.ranged = 'Ranged' in self.text
 		self.spell = 'Spell' in self.text
+		self.or_damage = False
 		# Get the attack bonus.
 		attack = self.text.index('Attack:*') + 8
 		bonus_word = self.text[attack:].split()[0]
@@ -72,6 +74,8 @@ class Attack(object):
 			elif roll:
 				self.damage.append((roll, word))
 				roll = ''
+			elif word == 'or':
+				self.or_damage = True
 		# Get any additional effects.
 		if not self.damage:
 			# Roll back one sentence.
@@ -80,7 +84,11 @@ class Attack(object):
 
 	def __repr__(self):
 		"""Debugging text representation. (str)"""
-		damage_text = ', '.join([f'{roll} {damage_type}' for roll, damage_type in self.damage])
+		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
+		if self.or_damage:
+			damage_text = ' or '.join(damage_bits)
+		else:
+			damage_text = ', '.join(damage_bits)
 		more_text = '...' if self.additional else ''
 		space = ' ' if self.damage and self.additional else ''
 		return f'<Attack {self.name} {self.bonus} {damage_text}{space}{more_text}>'
@@ -88,7 +96,11 @@ class Attack(object):
 	def __str__(self):
 		"""Debugging text representation. (str)"""
 		plus = '+' if self.bonus > -1 else ''
-		damage_text = ', '.join([f'{roll} {damage_type}' for roll, damage_type in self.damage])
+		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
+		if self.or_damage:
+			damage_text = ' or '.join(damage_bits)
+		else:
+			damage_text = ', '.join(damage_bits)
 		more_text = ' and more' if self.additional else ''
 		return f'{self.name}, {plus}{self.bonus} to hit, {damage_text}{more_text}'
 
@@ -130,7 +142,10 @@ class Attack(object):
 					sub_total += dice.roll(roll)
 				s = '' if sub_total == 1 else 's'
 				text_bits.append(f'{sub_total} point{s} of {damage} damage')
-				total += sub_total
+				if self.or_damage:
+					total = sub_total
+				else:
+					total += sub_total
 			target.hp = max(0, target.hp - total)
 			print(f'{target.name.capitalize()} has {target.hp} hit points left.')
 			# Create the text description.
@@ -139,7 +154,10 @@ class Attack(object):
 				text = f'{hit_type} for {text_bits[0]}'
 			else:
 				s = '' if total == 1 else 's'
-				text = f"{hit_type} for {total} point{s}; {', '.join(text_bits)}"
+				if self.or_damage:
+					text = f"{hit_type} for {total} point{s}; {' or '.join(text_bits)}"
+				else:
+					text = f"{hit_type} for {total} point{s}; {', '.join(text_bits)}"
 			if self.additional:
 				text += f'; {self.additional}'
 		# Handle normal misses.

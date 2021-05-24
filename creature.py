@@ -38,6 +38,7 @@ class Attack(object):
 	Overridden Methods:
 	__init__
 	__repr__
+	__str__
 	"""
 
 	def __init__(self, title, text):
@@ -83,6 +84,13 @@ class Attack(object):
 		more_text = '...' if self.additional else ''
 		space = ' ' if self.damage and self.additional else ''
 		return f'<Attack {self.name} {self.bonus} {damage_text}{space}{more_text}>'
+
+	def __str__(self):
+		"""Debugging text representation. (str)"""
+		plus = '+' if self.bonus > -1 else ''
+		damage_text = ', '.join([f'{roll} {damage_type}' for roll, damage_type in self.damage])
+		more_text = ' and more' if self.additional else ''
+		return f'{self.name}, {plus}{self.bonus} to hit, {damage_text}{more_text}'
 
 	def add_text(self, text):
 		"""
@@ -606,7 +614,7 @@ class Creature(object):
 			lines.append('')
 		# Set up attacks:
 		lines.append('Attacks:')
-		for letter, attack in zip(self.letters, self.attacks):
+		for letter, attack in zip(self.letters, self.attacks.values()):
 			lines.append(f'   {letter}: {attack}')
 		# Combine the lines.
 		return '\n'.join(lines)

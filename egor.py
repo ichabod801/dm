@@ -151,6 +151,23 @@ class Egor(cmd.Cmd):
 		else:
 			return super().default(line)
 
+	def do_ac(self, arguments):
+		"""
+		Set the armor class modifier for a creature.
+
+		Note that this does not change a creature's AC directly, it sets the 
+		modifier to the creature's AC. So if Fred gets +2 bonus for two weapon
+		fighting, you would use 'ac fred 2'.
+
+		The arguments are the creature's name or initiative order, and the 
+		value to set it's armor class modifier to.
+		"""
+		creature_id, ac_mod = arguments.split()
+		creature = self.get_creature(creature_id)
+		creature.ac_mod = int(ac_mod)
+		total_ac = creature.ac + creature.ac_mod
+		print(f"{creature.name}'s armor class is now {creature.ac} + {creature.ac_mod} = {total_ac}")
+
 	def do_alarm(self, arguments):
 		"""
 		Set an alarm.
@@ -546,7 +563,6 @@ class Egor(cmd.Cmd):
 			advantage = -1
 		else:
 			advantage = 0
-		print(advantage)
 		# Make the roll.
 		roll, success = target.save(ability[:3], int(dc), advantage)
 		# Report the results.

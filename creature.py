@@ -608,6 +608,8 @@ class Creature(object):
 
 	def combat_text(self):
 		"""Text representation for their turn in combat. (str)"""
+		# !! needs to be shorter, but wait for stats command.
+		# !! needs armor class.
 		# Set up header.
 		lines = [self.name]
 		if self.conditions:

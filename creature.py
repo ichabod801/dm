@@ -677,6 +677,24 @@ class Creature(object):
 		roll = dice.d20(advantage) + bonus
 		return roll, roll >= dc
 
+	def skill_check(self, skill, advantage = 0, ability = ''):
+		"""
+		Make a skill check. (tuple of int)
+
+		If an ability is not given, the default ability for the skill is used.
+
+		Parameters:
+		skill: The skill to check. (str)
+		advantage: Whether the creature has advantage on the check. (int)
+		ability: The ability to use for the check. (str)
+		"""
+		bonus = self.skills[skill]
+		if ability:
+			bonus -= self.bonuses[self.skill_abilities[skill]]
+			bonus += self.bonuses[ability]
+		roll = dice.d20(advantage)
+		return roll, roll + bonus
+
 	def update_conditions(self):
 		"""
 		Update condition timers, and remove finished conditions. (None)

@@ -74,6 +74,7 @@ class Egor(cmd.Cmd):
 	alarm_check: Check for any alarms that should have gone off. (None)
 	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
+	do_ac: Set the armor class modifier for a creature. (None)
 	do_day: Advance the time by day increments. (None)
 	do_heal: Heal a creature. (None)
 	do_hit: Do damage to a creature. (None)
@@ -83,9 +84,11 @@ class Egor(cmd.Cmd):
 	do_note: Record a note. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
+	do_save: Have a creature make a saving throw. (None)
 	do_set: Set one of the options. (None)
-	do_store: Save the current data. (None)
+	do_skill: Have a creature make a skill check. (None)
 	do_srd: Search the Source Resource Document. (None)
+	do_store: Save the current data. (None)
 	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
 	get_creature: Get a creature to apply a command to. (Creature)
@@ -545,7 +548,7 @@ class Egor(cmd.Cmd):
 
 	def do_save(self, arguments):
 		"""
-		Have a combatant make a saving throw.
+		Have a creature make a saving throw.
 
 		The arguments are the name of the target, the ability for the save, and 
 		the DC of the save. An optional fourth argument can specify advantage with
@@ -570,31 +573,6 @@ class Egor(cmd.Cmd):
 			print(f'{target.name} made the save with a {roll}.')
 		else:
 			print(f'{target.name} failed the save with a {roll}.')
-
-	def do_store(self, arguments):
-		"""Save the current data."""
-		with open('dm.dat', 'w') as data_file:
-			# Save the alarms.
-			for alarm in self.alarms:
-				data_file.write('alarm: {}\n'.format(alarm.data()))
-			# Save the notes with tags (allows deleting notes w/o messing up tags).
-			save_notes = [f'note: {note}' for note in self.notes]
-			for tag, indices in self.tags.items():
-				for index in indices:
-					if '|' not in save_notes[index]:
-						save_notes[index] += ' |'
-					save_notes[index] += f' {tag}'
-			for note in save_notes:
-				data_file.write(note + '\n')
-			# Save the time data.
-			data_file.write('time: {}\n'.format(self.time.short()))
-			for var, value in self.time_vars.items():
-				data_file.write('time-var: {} {}\n'.format(var, value))
-			# Save the loaded campaign, if any.
-			if self.campaign_folder:
-				data_file.write('campaign: {}\n'.format(self.campaign_folder))
-		self.changes = False
-		print('I have stored all of the incantations, master.')
 
 	def do_set(self, arguments):
 		"""
@@ -628,6 +606,53 @@ class Egor(cmd.Cmd):
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""
 		print(eval(arguments))
+
+	def do_skill(self, arguments):
+		"""
+		Have a creature make a skill check.
+
+		The arguments are the name of the target and the skill to roll the
+		check for. You can also add a three letter ability abbreviation (such
+		as str, dex, con, int, wis, or cha) to force the skill check to use a
+		non-standard ability. You may use 'ad' or 'advantage' to do the check
+		with advantage, or 'dis'/'disadvantage' to do the check at disadvantage.
+
+		If no skill is given, or Egor does not recognize the skill, he will ask
+		what skill should be checked.
+		"""
+		# Get the creature.
+		words = arguments.split()
+		target = self.get_creature(words[0])
+		# Set the default values.
+		advantage = 0
+		skill = ''
+		ability = ''
+		# Parse the arguments.
+		for word in words[1:]:
+			word = word.lower()
+			# Check for dis/advantage.
+			if word in ('ad', 'advantage'):
+				advantage = 1
+			elif word in ('dis', 'disadvantage'):
+				advantage = -1
+			# Check for known skills.
+			elif word in creature.Creature.skill_abilities:
+				skill = word
+			# Check for abilities.
+			elif word in ('str', 'dex', 'con', 'int', 'wis', 'cha'):
+				ability = word
+		# Ask for the skill in no recognized skill was in the arguments.
+		if not skill:
+			skills = list(creature.Creature.skill_abilities.keys())
+			skills.sort()
+			for skill_index, skill in enumerate(skills, start = 1):
+				print(f'{skill_index}: {skill}')
+			choice = input('Which skill is the check for? ')
+			skill = skills[int(choice)]
+			print()
+		# Make the skill check.
+		roll, check = target.skill_check(skill, advantage, ability)
+		print(f'{target.name} rolled a {roll} for a total of {check}.')
 
 	def do_srd(self, arguments):
 		"""
@@ -670,6 +695,31 @@ class Egor(cmd.Cmd):
 		else:
 			# Warn the user if there are no matches.
 			print('No matches found.')
+
+	def do_store(self, arguments):
+		"""Save the current data."""
+		with open('dm.dat', 'w') as data_file:
+			# Save the alarms.
+			for alarm in self.alarms:
+				data_file.write('alarm: {}\n'.format(alarm.data()))
+			# Save the notes with tags (allows deleting notes w/o messing up tags).
+			save_notes = [f'note: {note}' for note in self.notes]
+			for tag, indices in self.tags.items():
+				for index in indices:
+					if '|' not in save_notes[index]:
+						save_notes[index] += ' |'
+					save_notes[index] += f' {tag}'
+			for note in save_notes:
+				data_file.write(note + '\n')
+			# Save the time data.
+			data_file.write('time: {}\n'.format(self.time.short()))
+			for var, value in self.time_vars.items():
+				data_file.write('time-var: {} {}\n'.format(var, value))
+			# Save the loaded campaign, if any.
+			if self.campaign_folder:
+				data_file.write('campaign: {}\n'.format(self.campaign_folder))
+		self.changes = False
+		print('I have stored all of the incantations, master.')
 
 	def do_study(self, arguments):
 		"""

@@ -12,6 +12,7 @@ Egor: A helper for a D&D Dungeon master. (cmd.Cmd)
 
 import cmd
 import collections
+import random
 import re
 import textwrap
 import traceback
@@ -43,6 +44,9 @@ The next command can be used to advance the initiative count. The kill command
 removes creatures from the initiative count. The heal, hit, and hp commands
 can be use to manage the hit points of creatures. The attack command handles
 an attack from the current creature on another creature.
+
+The encounter command can be used to set up combats ahead of time. There are
+ways you can use this for random encounters.
 """
 
 class Egor(cmd.Cmd):
@@ -333,7 +337,7 @@ class Egor(cmd.Cmd):
 			bad_guy = input('Bad guy name: ').strip()
 			if not bad_guy:
 				break
-			bad_guy = bad_guy.replace(' ', '-')
+			#bad_guy = bad_guy.replace(' ', '-')
 			if bad_guy not in self.zoo:
 				print('Only creatures in the SRD or the campaign files can be used in encounters.')
 				continue
@@ -436,7 +440,10 @@ class Egor(cmd.Cmd):
 
 		Using 'add' or '+' in the arguments means you want to add creatures to the
 		current initiative. Using 'encounter' or '&' in the arguments means you
-		wish to use a predefined encounter.
+		wish to use a predefined encounter. You will be asked for the encounter's
+		name if you choose this option. If you precede the name with $, the rest
+		of the name will be treated as a regular expression. The encounter used
+		will be randomly chosen from those who's name matches the regular expression.
 
 		These must be separate words, so '&+' will not be recongized, but '& +'
 		will be.
@@ -470,7 +477,17 @@ class Egor(cmd.Cmd):
 		# Get and add an encounter if requested.
 		if encounter:
 			enc_name = input('Encounter name: ')
-			for name, roll in self.encounters[enc_name.strip().lower()]:
+			if enc_name[0] == '$':
+				enc_re = re.compile(enc_name[1:])
+				possible = [name for name in self.encounters if enc_re.match(name)]
+				if possible:
+					enc_name = random.choice(possible)
+				else:
+					print('There is no encounter matching that expression.')
+					return
+			else:
+				enc_name = enc_name.strip().lower()
+			for name, roll in self.encounters[enc_name]:
 				data = self.zoo[name]
 				count = dice.roll(roll)
 				for bad_guy in range(count):
@@ -943,7 +960,7 @@ class Egor(cmd.Cmd):
 					self.encounters[name] = []
 					for text in bad_texts:
 						bad_name, count = text.split(',')
-						self.encounters[name].append((bad_name.strip(), int(count)))
+						self.encounters[name].append((bad_name.strip(), count.strip()))
 				elif tag == 'note':
 					self.new_note(data.strip())
 				elif tag == 'time':

@@ -182,7 +182,7 @@ class Creature(object):
 	alignment: The creature's alignment. (str)
 	attack: The creature's attack actions. (dict of str: Attack)
 	bonuses: The creature's ability bonuses. (dict of str: int)
-	condtions: Any conditions affecting the creature, with timers. (list of tuple)
+	conditions: Any conditions affecting the creature, with timers. (dict of str: int)
 	cr: The creature's challenge rating. (int)
 	features: Non-action features of the creature. (dict of str: str)
 	hp: The creature's current hit points. (int)
@@ -225,6 +225,7 @@ class Creature(object):
 	copy: Create an independent version of the creature. (Creature)
 	init: Roll initiative for the creature. (int)
 	save: Make a saving throw. (tuple of int, bool)
+	skill_check: Make a skill check. (tuple of int)
 	update_conditions: Check conditions for expired ones. (None)
 
 	Overridden Methods:
@@ -262,7 +263,7 @@ class Creature(object):
 		self.actions = {}
 		self.attacks = {}
 		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
-		self.conditions = []
+		self.conditions = {}
 		self.description = ''
 		self.features = {}
 		self.hp_roll = '20d12'
@@ -371,7 +372,7 @@ class Creature(object):
 		"""Human readable text representation. (str)"""
 		text = f'{self.name}; {self.hp}/{self.hp_max}'
 		if self.conditions:
-			text = '{}; {}'.format(text, ', '.join(self.condtions))
+			text = '{}; {}'.format(text, ', '.join(self.conditions.keys()))
 		return text
 
 	def _parse_abilities(self, line):
@@ -613,7 +614,7 @@ class Creature(object):
 		# Set up header.
 		lines = [self.name]
 		if self.conditions:
-			lines.append(', '.join(self.conditions))
+			lines.append(', '.join(self.conditions.keys()))
 		lines.append('')
 		# Set up speed/hp section.
 		speed_text = f'Speed: {self.speed} ft.'
@@ -700,8 +701,8 @@ class Creature(object):
 		Update condition timers, and remove finished conditions. (None)
 		"""
 		for condition in self.conditions:
-			condition[1] -= 1
-		self.conditions = [condition for condition in self.conditions if condition[1]]
+			self.conditions[condition] -= 1
+		self.conditions = {con: rounds for con, rounds in self.conditions.items() if rounds}
 
 # A fake header node for creating blank creatures.
 DummyNode = collections.namedtuple('DummyNode', ('name', 'children'))

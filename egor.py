@@ -75,6 +75,7 @@ class Egor(cmd.Cmd):
 	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
 	do_ac: Set the armor class modifier for a creature. (None)
+	do_condition: Add a condition to a creature. (con)
 	do_day: Advance the time by day increments. (None)
 	do_heal: Heal a creature. (None)
 	do_hit: Do damage to a creature. (None)
@@ -91,6 +92,7 @@ class Egor(cmd.Cmd):
 	do_store: Save the current data. (None)
 	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
+	do_uncondition: Remove a condition from a creature. (None)
 	get_creature: Get a creature to apply a command to. (Creature)
 	load_campaign: Load stored campaign data. (None)
 	load_data: Load any stored state data. (None)
@@ -106,8 +108,8 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'@': 'attack', '&': 'note', 'init': 'initiative', 'n': 'next', 'q': 'quit', 'r': 'roll', 
-		't': 'time'}
+	aliases = {'@': 'attack', '&': 'note', 'con': 'condition', 'init': 'initiative', 'n': 'next', 
+		'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {}
 	prompt = 'Yes, master? '
@@ -267,6 +269,24 @@ class Egor(cmd.Cmd):
 				print(f'   {letter}: {attack}')
 			return
 		print(text)
+
+	def do_condition(self, arguments):
+		"""
+		Add a condition to a creature. (con)
+
+		The arguments are a creature name or initiative order, and a condition to
+		add to their condition list. An optional third argument is a number of 
+		rounds they condition will last.
+		"""
+		words = arguments.split()
+		target = self.get_creature(words[0], 'combat')
+		condition = words[1].lower()
+		if len(words) > 2:
+			rounds = int(words[2])
+		else:
+			rounds = -1
+		target.conditions[condition] = rounds
+		print(f'{target.name} now has the condition {condition}.')
 
 	def do_day(self, arguments):
 		"""
@@ -810,6 +830,22 @@ class Egor(cmd.Cmd):
 		print(self.time)
 		if words:
 			self.alarm_check(time_spec)
+
+	def do_uncondition(self, arguments):
+		"""
+		Remove a condition from a creature. (con)
+
+		The arguments are a creature name or initiative order, and a condition to
+		remove from their condition list.
+		"""
+		words = arguments.split()
+		target = self.get_creature(words[0], 'combat')
+		condition = words[1].lower()
+		if condition in target.conditions:
+			del target.conditions[condition]
+			print(f'{target.name} no longer has the condition {condition}.')
+		else:
+			print(f'{target.name} did not the condition {condition} to remove.')
 
 	def get_creature(self, creature, context = 'open'):
 		"""

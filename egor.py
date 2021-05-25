@@ -77,6 +77,7 @@ class Egor(cmd.Cmd):
 	do_ac: Set the armor class modifier for a creature. (None)
 	do_condition: Add a condition to a creature. (con)
 	do_day: Advance the time by day increments. (None)
+	do_encounter: Create an encounter for a later combat. (None)
 	do_heal: Heal a creature. (None)
 	do_hit: Do damage to a creature. (None)
 	do_hp: Set a creature's HP. (None)
@@ -305,6 +306,49 @@ class Egor(cmd.Cmd):
 		self.changes = True
 		self.alarm_check('day')
 
+	def do_encounter(self, arguments):
+		"""
+		Create an encounter for a later combat.
+
+		An encounter is just a set of creatures that you would otherwise enter at the
+		start of a combat done with the initiatve command. Instead of entering them at
+		that time, you use the & argument to the initiative command and enter in the
+		encounter name.
+
+		The argument to the encounter command is the name of the encounter you are
+		creating.
+
+		When giving a count of bad guys for an encounter, you can give a valid die 
+		roll instead. Then when you use the encounter, the number of that bad guy will
+		be randomly generated. 
+		"""
+		# Get the name of the encounter.
+		name = arguments.strip()
+		if not name:
+			print('You must provide an encounter name.')
+			return
+		self.encounters[name] = []
+		while True:
+			# Get the monster.
+			bad_guy = input('Bad guy name: ').strip()
+			if not bad_guy:
+				break
+			bad_guy = bad_guy.replace(' ', '-')
+			if bad_guy not in self.zoo:
+				print('Only creatures in the SRD or the campaign files can be used in encounters.')
+				continue
+			# Get the number of monsters.
+			# !! needs groups, do with one in the init, no number, all in combatants.
+			count = input('Number of bad guys: ')
+			if count.strip():
+				if not (count.isdigit() or dice.DICE_REGEX.match(count)):
+					print('Invalid count, please enter that creature again.')
+					continue
+			else:
+				count = 1
+			self.encounters[name].append((bad_guy, count))
+		self.changes = True
+
 	def do_help(self, arguments):
 		"""
 		Handle help requests. (bool)
@@ -426,8 +470,9 @@ class Egor(cmd.Cmd):
 		# Get and add an encounter if requested.
 		if encounter:
 			enc_name = input('Encounter name: ')
-			for name, count in self.encounters[enc_name.strip().lower()]:
+			for name, roll in self.encounters[enc_name.strip().lower()]:
 				data = self.zoo[name]
+				count = dice.roll(roll)
 				for bad_guy in range(count):
 					if count > 1:
 						sub_name = f'{name}-{bad_guy + 1}'
@@ -738,6 +783,12 @@ class Egor(cmd.Cmd):
 			# Save the loaded campaign, if any.
 			if self.campaign_folder:
 				data_file.write('campaign: {}\n'.format(self.campaign_folder))
+			# Save any encounters.
+			if self.encounters:
+				for name, bad_guys in self.encounters.items():
+					bad_texts = [f'{name}, {count}' for name, count in bad_guys]
+					enc_text = 'encounter: {} = {}\n'.format(name, '; '.join(bad_texts))
+					data_file.write(enc_text)
 		self.changes = False
 		print('I have stored all of the incantations, master.')
 
@@ -885,6 +936,14 @@ class Egor(cmd.Cmd):
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
 				elif tag == 'campaign':
 					self.campaign_folder = data.strip()
+				elif tag == 'encounter':
+					name, bad_guys = data.split('=')
+					name = name.strip()
+					bad_texts = bad_guys.split(';')
+					self.encounters[name] = []
+					for text in bad_texts:
+						bad_name, count = text.split(',')
+						self.encounters[name].append((bad_name.strip(), int(count)))
 				elif tag == 'note':
 					self.new_note(data.strip())
 				elif tag == 'time':
@@ -950,7 +1009,7 @@ class Egor(cmd.Cmd):
 		self.campaign_folder = ''
 		self.changes = False
 		self.combatants = {}
-		self.encounters = []
+		self.encounters = {}
 		self.init = []
 		self.notes = []
 		self.time = gtime.Time(1, 1, 6, 0)

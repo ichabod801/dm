@@ -223,9 +223,12 @@ class Creature(object):
 	attack: Attack something. (tuple of int, text)
 	combat_text: Text representation for their turn in combat. (str)
 	copy: Create an independent version of the creature. (Creature)
+	heal: Heal damage to the creature. (int)
+	hit: Handle the creature taking damage. (int)
 	init: Roll initiative for the creature. (int)
 	save: Make a saving throw. (tuple of int, bool)
 	skill_check: Make a skill check. (tuple of int)
+	stat_block: Full text representation. (str)
 	update_conditions: Check conditions for expired ones. (None)
 
 	Overridden Methods:
@@ -611,8 +614,6 @@ class Creature(object):
 
 	def combat_text(self):
 		"""Text representation for their turn in combat. (str)"""
-		# !! needs to be shorter, but wait for stats command.
-		# !! needs armor class.
 		# Set up header.
 		lines = ['-------------------', self.name]
 		if self.conditions:
@@ -657,6 +658,34 @@ class Creature(object):
 		clone.hp_max = clone.hp
 		return clone
 
+	def heal(self, hp):
+		"""
+		Heal damage to the creature. (int)
+
+		Parameters:
+		hp: The amount of damage to heal. (int)
+		"""
+		self.hp = min(self.hp + hp, self.hp_max)
+		return self.hp
+
+	def hit(self, hp):
+		"""
+		Handle the creature taking damage. (int)
+
+		Parameters:
+		hp: The amount of damage to take. (int)
+		"""
+		if hp < 0:
+			return self.heal(abs(hp))
+		if self.hp_temp:
+			self.hp_temp -= hp
+			if self.hp_temp < 0:
+				self.hp = max(self.hp + self.hp_temp, 0)
+				self.hp_temp = 0
+		else:
+			self.hp = max(self.hp - int(hp), 0)
+		return self.hp
+
 	def init(self):
 		"""Roll initiative for the creature. (int)"""
 		self.initiative = dice.d20() + self.init_bonus
@@ -694,7 +723,7 @@ class Creature(object):
 		return roll, roll + bonus
 
 	def stat_block(self):
-		"""Full text representation"""
+		"""Full text representation. (str)"""
 		lines = [f'## {self.name}', '']
 		# Type, armor class, and speed section.
 		if self.sub_type:

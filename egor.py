@@ -415,8 +415,11 @@ class Egor(cmd.Cmd):
 		"""
 		target_id, healing = arguments.split()
 		target = self.get_creature(target_id)
-		target.hp = min(target.hp + int(healing), target.hp_max)
-		print(f'{target.name} now has {target.hp} HP.')
+		target.heal(int(healing))
+		if target.hp_temp:
+			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
+		else:
+			print(f'{target.name} now has {target.hp} HP.')
 
 	def do_hit(self, arguments):
 		"""
@@ -427,20 +430,33 @@ class Egor(cmd.Cmd):
 		"""
 		target_id, damage = arguments.split()
 		target = self.get_creature(target_id)
-		target.hp = max(target.hp - int(damage), 0)
-		print(f'{target.name} now has {target.hp} HP.')
+		target.hit(int(damage))
+		if target.hp_temp:
+			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
+		else:
+			print(f'{target.name} now has {target.hp} HP.')
 
 	def do_hp(self, arguments):
 		"""
 		Set a creature's hit points.
 
 		The arguments are a creature name or initiative order number, and a number
-		of points of damage to do to that creature.
+		of points of damage to do to that creature. You can also give the optional
+		argument of 'temp' or 'temporary' to set the creature's temporary hit points.
 		"""
-		target_id, hp = arguments.split()
-		target = self.get_creature(target_id)
-		target.hp = min(int(hp), target.hp_max)
-		print(f'{target.name} now has {target.hp} HP.')
+		# Parse the arguments.
+		words = arguments.split()
+		target = self.get_creature(words[0])
+		# Apply the hp as directed.
+		if len(words) > 2 and words[2].lower() in ('temp', 'temporary'):
+			target.hp_temp = max(target.hp_temp, int(words[1]))
+		else:
+			target.hp = min(int(words[1]), target.hp_max)
+		# Notify the user of the new state.
+		if target.hp_temp:
+			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
+		else:
+			print(f'{target.name} now has {target.hp} HP.')
 
 	def do_initiative(self, arguments):
 		"""

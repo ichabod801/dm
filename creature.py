@@ -264,6 +264,7 @@ class Creature(object):
 		self.attacks = {}
 		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
 		self.conditions = {}
+		self.cr = 0
 		self.description = ''
 		self.features = {}
 		self.hp_roll = '20d12'
@@ -280,6 +281,7 @@ class Creature(object):
 		self.speed = 30
 		self.other_speeds = ''
 		self.type = 'unknown'
+		self.xp = 0
 		# Set the Tracking variables.
 		abilities = False
 		last_key = ''
@@ -612,31 +614,26 @@ class Creature(object):
 		# !! needs to be shorter, but wait for stats command.
 		# !! needs armor class.
 		# Set up header.
-		lines = [self.name]
+		lines = ['-------------------', self.name]
 		if self.conditions:
 			lines.append(', '.join(self.conditions.keys()))
-		lines.append('')
+		lines.append('-------------------')
+		#lines.extend(['', '-------------------', ''])
 		# Set up speed/hp section.
 		speed_text = f'Speed: {self.speed} ft.'
 		if self.other_speeds:
 			speed_text = f'{speed_text}; {self.other_speeds}'
 		lines.append(speed_text)
+		lines.append(f'AC: {self.ac}')
 		lines.append(f'HP: {self.hp}/{self.hp_max}')
-		lines.append('')
+		lines.append('-------------------')
+		#lines.extend(['', '-------------------', ''])
 		# Set up features:
 		if self.features:
-			lines.append('Features:')
-			for title, text in self.features.items():
-				text = text.replace('\n\n', '\n      ')
-				lines.append(f'   {title}: {text}')
-			lines.append('')
+			lines.append('Features: {}'.format(', '.join(title for title in self.features)))
 		# Set up actions:
 		if self.actions:
-			lines.append(f'Actions:')
-			for title, text in self.actions.items():
-				text = text.replace('\n\n', '\n      ')
-				lines.append(f'   {title}: {text}')
-			lines.append('')
+			lines.append('Actions: {}'.format(', '.join(title for title in self.actions)))
 		# Set up attacks:
 		lines.append('Attacks:')
 		for letter, attack in zip(self.letters, self.attacks.values()):
@@ -696,10 +693,79 @@ class Creature(object):
 		roll = dice.d20(advantage)
 		return roll, roll + bonus
 
+	def stat_block(self):
+		"""Full text representation"""
+		lines = [f'## {self.name}', '']
+		# Type, armor class, and speed section.
+		if self.sub_type:
+			lines.append(f'*{self.size} {self.type} ({self.sub_type}), {self.alignment}*')
+		else:
+			lines.append(f'*{self.size} {self.type}, {self.alignment}*')
+		if self.ac_text:
+			lines.append(f'**Armor Class** {self.ac} ({self.ac_text})')
+		else:
+			lines.append(f'**Armor Class** {self.ac}')
+		lines.append(f'**Hit Points** {self.hp}/{self.hp_max} ({self.hp_roll})')
+		if self.other_speeds:
+			lines.append(f'**Speed** {self.speed} ft., {self.other_speeds}')
+		else:
+			lines.append(f'**Speed** {self.speed} ft.')
+		# Abilities section
+		score_bits = []
+		title_bits = []
+		line_bits = []
+		for ability, score in self.abilities.items():
+			bonus = score // 2 - 5
+			plus = '+' if bonus >= 0 else ''
+			score_bits.append(f'{score} ({plus}{bonus})')
+			title_format = f'{{:<{len(score_bits[-1])}}}'
+			title_bits.append(title_format.format(ability.upper()))
+			line_bits.append('-' * len(score_bits[-1]))
+		lines.append('')
+		lines.append('| {} |'.format(' | '.join(title_bits)))
+		lines.append('|-{}-|'.format('-|-'.join(line_bits)))
+		lines.append('| {} |'.format(' | '.join(score_bits)))
+		lines.append('')
+		# Features Section.
+		lines.append(f'**Senses** {self.senses}')
+		lines.append(f'**Languages** {self.languages}')
+		if self.cr >= 1:
+			lines.append(f'**Challenge** {self.cr} ({self.xp} XP)')
+		elif self.cr:
+			denom = round(1 / self.cr, 0)
+			lines.append(f'**Challenge** 1/{denom} ({self.xp} XP)')
+		for name, text in self.features.items():
+			text = text.replace('\n\n', '\n    ')
+			lines.append(f'**{name}**. {text}')
+		# Actions section
+		if self.actions:
+			lines.append('\n### Actions\n')
+			for name, text in self.actions.items():
+				text = text.replace('\n\n', '\n    ')
+				lines.append(f'***{name}***. {text}')
+			lines.append('')
+		# Reactions section
+		if self.reactions:
+			lines.append('\n### Reactions\n')
+			for name, text in self.reactions.items():
+				text = text.replace('\n\n', '\n    ')
+				lines.append(f'***{name}***. {text}')
+			lines.append('')
+		# Legendary ctions section
+		if self.legendary:
+			lines.append('\n### Legendary Actions\n')
+			for name, text in self.legendary.items():
+				text = text.replace('\n\n', '\n    ')
+				lines.append(f'***{name}***. {text}')
+			lines.append('')
+		# Attacks section
+		lines.append('Attacks:')
+		for letter, attack in zip(self.letters, self.attacks.values()):
+			lines.append(f'   {letter}: {attack}')
+		return '\n'.join(lines)
+
 	def update_conditions(self):
-		"""
-		Update condition timers, and remove finished conditions. (None)
-		"""
+		""" Update condition timers, and remove finished conditions. (None)"""
 		for condition in self.conditions:
 			self.conditions[condition] -= 1
 		self.conditions = {con: rounds for con, rounds in self.conditions.items() if rounds}

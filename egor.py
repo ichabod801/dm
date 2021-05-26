@@ -94,6 +94,7 @@ class Egor(cmd.Cmd):
 	do_set: Set one of the options. (None)
 	do_skill: Have a creature make a skill check. (None)
 	do_srd: Search the Source Resource Document. (None)
+	do_stats: Show the full stat block for a given creature. (None)
 	do_store: Save the current data. (None)
 	do_study: Study previously recorded notes. (None)
 	do_time: Update the current game time. (None)
@@ -136,9 +137,8 @@ class Egor(cmd.Cmd):
 		"""Print a summary of the current combat. (None)"""
 		if self.init_count == 0:
 			print(f'It is now Round {self.round}')
-			print('-------------------\n')
 		print(self.init[self.init_count].combat_text())
-		print('\n-------------------\n')
+		print('-------------------\n')
 		by_number = list(enumerate((str(combatant) for combatant in self.init), start = 1))
 		for index, combatant in by_number[(self.init_count + 1):] + by_number[:self.init_count]:
 			print(f'{index}: {combatant}')
@@ -475,6 +475,7 @@ class Egor(cmd.Cmd):
 					pc.init()
 				self.init.append(pc)
 		# Get and add an encounter if requested.
+		# !! move to front so DM knows random encounters before asking for initiatives.
 		if encounter:
 			enc_name = input('Encounter name: ')
 			if enc_name[0] == '$':
@@ -777,6 +778,15 @@ class Egor(cmd.Cmd):
 		else:
 			# Warn the user if there are no matches.
 			print('No matches found.')
+
+	def do_stats(self, arguments):
+		"""
+		Show the full stat block for a given creature.
+
+		The argument is the name of a creature or the creature's initiative order.
+		"""
+		creature = self.get_creature(arguments)
+		print(creature.stat_block())
 
 	def do_store(self, arguments):
 		"""Save the current data."""

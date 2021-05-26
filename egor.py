@@ -357,6 +357,10 @@ class Egor(cmd.Cmd):
 			self.encounters[name].append((bad_guy, count))
 		self.changes = True
 
+	def do_git(self, arguments):
+		"""Egor doesn't understand git."""
+		print('You need to quit out of Egor to commit anything, dipshit.')
+
 	def do_help(self, arguments):
 		"""
 		Handle help requests. (bool)
@@ -709,11 +713,15 @@ class Egor(cmd.Cmd):
 		"""
 		# Get the creature.
 		words = arguments.split()
-		target = self.get_creature(words[0])
+		if words[0].lower() == 'pcs':
+			targets = list(self.pcs.values())
+		else:
+			targets = [self.get_creature(words[0])]
 		# Set the default values.
 		advantage = 0
 		skill = ''
 		ability = ''
+		passive = False
 		# Parse the arguments.
 		for word in words[1:]:
 			word = word.lower()
@@ -722,6 +730,9 @@ class Egor(cmd.Cmd):
 				advantage = 1
 			elif word in ('dis', 'disadvantage'):
 				advantage = -1
+			# Check for noting passive.
+			elif word in ('pass', 'passive'):
+				passive = True
 			# Check for known skills.
 			elif word in creature.Creature.skill_abilities:
 				skill = word
@@ -738,8 +749,13 @@ class Egor(cmd.Cmd):
 			skill = skills[int(choice)]
 			print()
 		# Make the skill check.
-		roll, check = target.skill_check(skill, advantage, ability)
-		print(f'{target.name} rolled a {roll} for a total of {check}.')
+		for target in targets:
+			roll, check = target.skill_check(skill, advantage, ability)
+			if passive:
+				passive_check = 10 + target.skills[skill] + 5 * advantage
+				print(f'{target.name} rolled a {roll} for a total of {check} (passive = {passive_check}).')
+			else:
+				print(f'{target.name} rolled a {roll} for a total of {check}.')
 
 	def do_srd(self, arguments):
 		"""

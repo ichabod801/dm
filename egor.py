@@ -47,6 +47,10 @@ an attack from the current creature on another creature.
 
 The encounter command can be used to set up combats ahead of time. There are
 ways you can use this for random encounters.
+
+During combat you are shown an abbreviated stat block for the currently acting
+creature. You can get the full stat block for that (or any other) creature 
+using the stats command.
 """
 
 class Egor(cmd.Cmd):
@@ -783,8 +787,12 @@ class Egor(cmd.Cmd):
 		"""
 		Show the full stat block for a given creature.
 
-		The argument is the name of a creature or the creature's initiative order.
+		The argument is the name of a creature or the creature's initiative order. If
+		no argument is given, it returns the stat block for the currently acting
+		creature in combat.
 		"""
+		if not arguments.strip():
+			arguments = str(self.init_count + 1)
 		creature = self.get_creature(arguments)
 		print(creature.stat_block())
 

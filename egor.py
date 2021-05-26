@@ -702,11 +702,16 @@ class Egor(cmd.Cmd):
 		"""
 		Have a creature make a skill check.
 
-		The arguments are the name of the target and the skill to roll the
+		The arguments are the name of the creature and the skill to roll the
 		check for. You can also add a three letter ability abbreviation (such
 		as str, dex, con, int, wis, or cha) to force the skill check to use a
 		non-standard ability. You may use 'ad' or 'advantage' to do the check
 		with advantage, or 'dis'/'disadvantage' to do the check at disadvantage.
+		If you add 'pass' or 'passive', the result will also show the creature's
+		passive score in that skill.
+
+		If 'pcs' is given as the creature, the skill is rolled for all player
+		characters.
 
 		If no skill is given, or Egor does not recognize the skill, he will ask
 		what skill should be checked.

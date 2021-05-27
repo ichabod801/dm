@@ -162,92 +162,149 @@ class AlarmByTime(Alarm):
 			repeat = Time.from_str(repeat.replace('-', ' '))
 		return AlarmByTime(trigger, note, repeat)
 
-class Calendar(object):
+class DeviationCalendar(object):
 	"""
-	A system for giving a unique identifier to each day. (object)
+	A calender using integers and planned deviations. (object)
+
+	# !! redo to drop year_deviations, and calculate year_length from months.
 
 	Attributes:
-	cycles: The cycles of the calendar. (list of Cycle)
-	description: A description of the calendar. (str)
-	formats: Different ways to print the date. (dict of str: str)
-	name: The name of the calendar. (str)
-	one_index: A flag for the year being one indexed. (bool)
+	calculated_years: The pre-calculated number of days per year. (list of int)
+	month_deviations: Deviations in the length of months. (list of Deviation)
+	months: The months of the year and their length in days. (dict of str: int)
+	year_deviations: Deviations in the length of the year. (list of Deviation)
+	year_length: The length of the standard year in days. (int)
 
 	Methods:
-	get_negative_year: Create a table of days in a year below 0. (list of dict)
-	get_year: Create a table of days in a given year. (list of dict)
+	days_in_year: Calculate how many days there are in a given year. (int)
+	days_to_year: Calculate how many days there are before a given year. (int)
+	months_in_year: Calculate the month lengths for a given year. (dict)
 
 	Overridden Methods:
 	__init__
 	"""
 
-	def __init__(self, node):
+	def __init__(self, year_length, months, year_deviations, month_deviations):
 		"""
-		Parse the calendar's definition. (None)
+		Set up the calendar structure. (None)
 
 		Parameters:
-		node: The document section contianing the definition. (HeaderNode)
+		year_length: The length of the year in days. (int)
+		months: The months of the year and their length in days. (dict of str: int)
+		year_deviations: Deviations in the length of the year. (list of Deviation)
+		month_deviations: Deviations in the length of months. (list of Deviation)
 		"""
-		# Set the default values of the attributes.
-		self.name = node.name.replace('Calendar', '').strip()
-		self.description = node.name
-		self.one_index = True
-		self.cycles = []
-		self.formats = {}
-		# Read the markdown specification of the calendar.
-		for child in node.children:
-			# Parse out text nodes.
-			if hasattr(child, 'lines'):
-				for line in child.lines:
-					low_line = line.lower()
-					# Parse the end of year specification.
-					if low_line.startswith('**new year**'):
-						self.new_year = low_line[13:].strip()
-						if self.new_year.isdigit():
-							self.new_year = int(self.new_year)
-					# Parse the first year flag.
-					elif low_line.startswith('**one index**'):
-						self.one_index = low_line[13:].strip() in ('true', 'yes')
-					# Assume everything else is part of the description.
-					else:
-						self.description = '{}\n\n{}'.format(self.description, line)
-			# Parse the cycles that make up the calendar.
-			elif child.name == 'Cycles':
-				for cycle_node in child.nodes:
-					self.cycles.append(Cycle(cycle_node))
-			# Parse the way to state a give date.
-			elif child.name == 'Formats':
-				for line in child.children[0]:
-					blank, name, format_text = line.split('**')
-					self.formats[name] == format_text.strip()
-		# Make sure there is a default date format.
-		if 'default' not in self.formats:
-			default = ', '.join([cycle.format_text for cycle in self.cycles] + ['{year}'])
+		self.year_length = year_length
+		self.year_deviations = year_deviations
+		self.months = months
+		self.month_deviations = month_deviations
+		self.calculated_years = [0]
 
-	def get_negative_year(self, year):
+	def days_in_year(self, year):
 		"""
-		Create a table of days in a given year below 0. (list of dict)
-
-		Note that get_year can handle negative years by calling this method.
+		Calculate how many days there are in a given year. (int)
 
 		Parameters:
-		year: The year to get a table of days for. (int).
+		year: The year to calculate the number of days for. (int)
 		"""
-		# Confirm the year is negative.
+		# Calculate deviations from base.
+		days = self.year_length
+		for deviation in year_deviations:
+			if deviation.function(year):
+				days = deviation.new_value
+		return days
 
-	def get_year(self, year):
+	def days_to_year(self, year):
 		"""
-		Create a table of days in a given year. (list of dict)
+		Calculate how many days there are before a given year. (int)
 
 		Parameters:
-		year: The year to get a table of days for. (int).
+		year: The year to calculate the number of days before. (int)
 		"""
-		# check for getting a negative year.
-		# Get the first year.
-		# loop through the years.
-			# Get the cycles for the year.
-			# Get the year length.
-			# Run all cycles through that length.
+		# Calculate for each year not calculated yet.
+		total = sum(self.calculated_years[:year])
+		for sub_year in range(len(self.calculated_years), year):
+			days = self.days_in_year(sub_year)
+			self.calculated_years.append(days)
+			total += days
+		return total
+
+	def months_in_year(self, year):
+		"""
+		Calculate the month lengths for a given year. (dict of str: int)
+
+		Parameters:
+		year: The year to calculate the length of the months for. (int)
+		"""
+		# Calculate the deviations from base months.
+		year_months = self.months.copy()
+		for deviation in month_deviations:
+			if deviation.function(year):
+				year_months[deviation.period] = deviation.new_value
+		return year_months
+
+class FractionalCalendar(object):
+	"""
+	A calendar using fractional year lengths. (object)
+
+	Attributes:
+	months: The months of the year and their length in days. (dict of str: int)
+	overage_month: The month getting an extra day in a long year. (str)
+	year_length: The number of days in the year. (float)
+
+	Methods:
+
+	Overridden Methods:
+	__init__
+	"""
+
+	def __init__(self, year_length, months, overage_month):
+		"""
+		Set up the calendar structure. (None)
+
+		Parameters:
+		year_length: The number of days in the year. (float)
+		months: The months of the year and their length in days. (dict of str: int)
+		overage_month: overage_month: The month getting an extra day in a long year. (str)
+		"""
+		self.year_length = year_length
+		self.months = months
+		self.overage_month = overage_month
+
+	def days_in_year(self, year):
+		"""
+		Calculate how many days there are in a given year. (int)
+
+		Parameters:
+		year: The year to calculate the number of days for. (int)
+		"""
+		# Calculate last year's overage to see if this year crosses the 0.5 line.
+		previous_days = (year - 1) * self.year_length
+		previous_fraction = previous_days - int(previous_days)
+		return round(year * self.year_length + previous_fraction, 0)
+
+	def days_to_year(self, year):
+		"""
+		Calculate how many days there are before a given year. (int)
+
+		Parameters:
+		year: The year to calculate the number of days before. (int)
+		"""
+		# This is simple multiplication for this type of calendar.
+		return round((year - 1) * year_length, 0)
+
+	def months_in_year(self, year):
+		"""
+		Calculate the month lengths for a given year. (dict of str: int)
+
+		Parameters:
+		year: The year to calculate the length of the months for. (int)
+		"""
+		# Add to the overage month if it's a longer year.
+		year_months = self.months.copy()
+		if days_in_year(year) > self.year_length:
+			year_months[self.overage_month] += 1
+		return year_months
 
 class Cycle(object):
 	"""
@@ -315,6 +372,24 @@ class Cycle(object):
 			self.format_text = f'{{{self.singular}}} {{{self.singular}-day}}'
 		# Get the initial state of the cycle.
 		self.state = {'cycle-day': self.start, 'cycle': 1, 'year': 1, 'periods': self.get_periods(1, 1)}
+		start = self.start
+		for period in self.state['periods']:
+			if start <= period.days:
+				self.state['current-period'] = period
+				self.state['period-day'] = start
+				break
+			else:
+				start -= period.days
+
+	def advance(self, days, year):
+		"""
+		Advance the cycle. (None)
+
+		Parameters:
+		days: The number of days to advance the cycle. (int)
+		year: The number of the year after advancement. (int)
+		"""
+		# !! the year being separate is a big problem.
 
 	def get_periods(self, cycle, year):
 		"""

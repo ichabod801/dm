@@ -4,6 +4,7 @@ egor.py
 A command line interface for a D&D DM helper.
 
 Constants:
+HELP_CONDITIONS: Summaries of the various conditions. (str)
 HELP_GENERAL: The general help text for Egor. (str)
 
 Classes:
@@ -21,6 +22,45 @@ import creature
 import dice
 import srd
 import gtime
+
+HELP_CONDITIONS = """
+Blinded: Can't see, fails all checks requiring sight, attacks have dis-
+   advantage, attacks against have advantage.
+Charmed: Can't attack the charmer or target them with harmul effects, charmer
+   has advantage on social interactions with creature.
+Deafened: Can't hear, fails all checks requiring hearing.
+Exhausted: Depends on level of exhaustion:
+   1. Disadvantage on ability checks.
+   2. Speed halved.
+   3. Disadvantage on attacks and saves.
+   4. HP maximum is halved.
+   5. Speed is reduced to 0.
+   6. Dead.
+Frightened: Disadvantage on ability checks and attacks while they can see the
+   source of their fear, can't willing move close to the fear source.
+Grappled: Speed = 0, can't benefit from bonus to speed. Ends if grappler is
+   incapacitated, or if target is removed from grappler's reach.
+Incapacitated: Cannot take actions or reactions.
+Invisible: Can't be seen without special effect, counts as heavily obscured.
+   The creature's location can be determined by noise and tracks. Attacks
+   against have disadvantage, attacks have advantage.
+Paralyzed: Incapacitated, can't move or speak, fails all str and dex saves,
+   attacks against have advantage, hits are crits if within five feet.
+Petrified: Weight increases by 10, stops aging, incapacitated, can't move or
+   speak, is unaware of it's surroundings, attacks against have advantage,
+   fails all str and dex saves, resistance to all damage, immune to poison
+   and disease (although current poison/disease is just suspended).
+Poisoned: Disadvantage on attacks and ability checks.
+Prone: May crawl or stand up, disadvantage on attacks, attacks have advantage
+   if the attacker is within 5 ft., disadvantage otherwise.
+Restrained: Speed = 0, can't benefit from bonus to speed, attacks against have
+   advantage, attacks have disadvantage, disadvantage on dex saves.
+Stunned: Incapacitated, can't move, and has limited speech. Fails all dex and
+   str saves, attacks against have advantage.
+Unconcious: Incapacitated, can't move or speak, is unaware of it's surround-
+   ings, drops what it is holding, falls prone, fails all dex and str saves,
+   attacks against have advantage, any attack is a crit if within 5 ft.
+"""
 
 HELP_GENERAL = """
 You can use the roll command to roll dice, in all sorts of combinations. The
@@ -121,7 +161,7 @@ class Egor(cmd.Cmd):
 	aliases = {'@': 'attack', '&': 'note', 'con': 'condition', 'init': 'initiative', 'n': 'next', 
 		'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
-	help_text = {}
+	help_text = {'conditions': HELP_CONDITIONS, 'help': HELP_GENERAL}
 	prompt = 'Yes, master? '
 	tag_regex = re.compile(r'[a-zA-Z0-9\-]+')
 	time_vars = {'combat': '10', 'long-rest': '8:00', 'room': '10', 'short-rest': '60'}

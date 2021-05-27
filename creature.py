@@ -665,6 +665,8 @@ class Creature(object):
 		Parameters:
 		hp: The amount of damage to heal. (int)
 		"""
+		if hp < 0:
+			return self.hit(abs(hp))
 		self.hp = min(self.hp + hp, self.hp_max)
 		return self.hp
 
@@ -677,6 +679,10 @@ class Creature(object):
 		"""
 		if hp < 0:
 			return self.heal(abs(hp))
+		for condition in self.conditions:
+			if condition.lower().startswith('conc'):
+				dc = max(10, hp // 2)
+				print(f'{self.name} needs to make a concentration check (con save) of DC {dc}.')
 		if self.hp_temp:
 			self.hp_temp -= hp
 			if self.hp_temp < 0:

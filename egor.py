@@ -522,6 +522,26 @@ class Egor(cmd.Cmd):
 		add = '+' in arg_words
 		encounter = '&' in arg_words
 		self.auto_attack = not add and 'auto' in arg_words
+		# Check for the encounter (if it's random the DM will want to know who it is first)
+		if encounter:
+			enc_name = input('Encounter name: ')
+			if enc_name[0] == '$':
+				enc_re = re.compile(enc_name[1:])
+				possible = [name for name in self.encounters if enc_re.match(name)]
+				if possible:
+					enc_name = random.choice(possible)
+				else:
+					print('There is no encounter matching that expression.')
+					return
+			else:
+				enc_name = enc_name.strip().lower()
+			print('\nThe encounter has:')
+			encounter = []
+			for name, roll in self.encounters[enc_name]:
+				count = dice.roll(roll)
+				print(f'{count}x {name}')
+				encounter.append((name, str(count)))
+			print('')
 		# If you are not adding, set up the initiative and the PCs.
 		if not add:
 			# Set up the initiative tracking.
@@ -541,18 +561,7 @@ class Egor(cmd.Cmd):
 		# Get and add an encounter if requested.
 		# !! move to front so DM knows random encounters before asking for initiatives.
 		if encounter:
-			enc_name = input('Encounter name: ')
-			if enc_name[0] == '$':
-				enc_re = re.compile(enc_name[1:])
-				possible = [name for name in self.encounters if enc_re.match(name)]
-				if possible:
-					enc_name = random.choice(possible)
-				else:
-					print('There is no encounter matching that expression.')
-					return
-			else:
-				enc_name = enc_name.strip().lower()
-			for name, roll in self.encounters[enc_name]:
+			for name, roll in encounter:
 				data = self.zoo[name]
 				count = dice.roll(roll)
 				for bad_guy in range(count):

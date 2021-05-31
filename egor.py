@@ -90,7 +90,8 @@ ways you can use this for random encounters.
 
 During combat you are shown an abbreviated stat block for the currently acting
 creature. You can get the full stat block for that (or any other) creature 
-using the stats command.
+using the stats command. The show command prints the initiative order again if 
+you lose track of it.
 """
 
 class Egor(cmd.Cmd):
@@ -528,8 +529,8 @@ class Egor(cmd.Cmd):
 		# !! refactor for size
 		# Parse the arguments.
 		arg_words = arguments.split()
-		add = '+' in arg_words
-		encounter = '&' in arg_words
+		add = '+' in arg_words or 'add' in arg_words
+		encounter = '&' in arg_words or 'encounter' in arg words
 		self.auto_attack = not add and 'auto' in arg_words
 		# Check for the encounter (if it's random the DM will want to know who it is first)
 		if encounter:
@@ -783,6 +784,10 @@ class Egor(cmd.Cmd):
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""
 		print(eval(arguments))
+
+	def do_show(self, arguments):
+		"""Show the initiative order."""
+		self.combat_text()
 
 	def do_skill(self, arguments):
 		"""

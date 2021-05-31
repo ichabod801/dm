@@ -468,8 +468,10 @@ class Egor(cmd.Cmd):
 		The arguments are a creature name or initiative order number, and a number
 		of points of damage to do to that creature.
 		"""
+		# Parse the arguments.
 		target_id, damage = arguments.split()
 		target = self.get_creature(target_id)
+		# Apply the damage.
 		target.hit(int(damage))
 		if target.hp_temp:
 			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
@@ -515,6 +517,13 @@ class Egor(cmd.Cmd):
 		You will be asked for the initiative for any PCs. If you do not enter a
 		value, the system will roll the initiative for that character. This is 
 		useful for NPCs.
+
+		When entering a number of bad guys, you can add 'g' to the number. This will
+		give one initiative to all of those bad guys. For example, if you enter in
+		'wight' as the bad guy and '5g' as the number of bad guys, it will show up in
+		the initiative as 'wight-group-of-5'. You can still get the individuals bad
+		guys with 'wight-1' or 'wight-3'. If you try to target that group using their
+		initiative order, you will be asked which particular one you want to hit.
 		"""
 		# !! refactor for size
 		# Parse the arguments.
@@ -582,8 +591,14 @@ class Egor(cmd.Cmd):
 					break
 				name = name.replace(' ', '-')
 				# Get the number of monsters.
-				# !! needs groups, do with one in the init, no number, all in combatants.
-				count = input('Number of bad guys: ')
+				count = input('Number of bad guys: ').lower()
+				# Check for groups.
+				if 'g' in count:
+					group = True
+					count = count.replace('g', '')
+				else:
+					group = False
+				# Parse the count.
 				if count.strip():
 					count = int(count)
 				else:
@@ -605,10 +620,16 @@ class Egor(cmd.Cmd):
 					else:
 						sub_name = name
 					npc = data.copy(sub_name)
-					#npc = creature.Creature(sub_name, data)
+					if not group:
+						npc.init()
+						self.init.append(npc)
+					self.combatants[npc.name.lower()] = npc
+				# Handle groups
+				if group:
+					sub_name = f'{name}-group-of-{count}'
+					npc = data.copy(sub_name)
 					npc.init()
 					self.init.append(npc)
-					self.combatants[npc.name.lower()] = npc
 		# Sort by the initiative rolls.
 		if add:
 			# Save the current point in combat, if adding to the combat.
@@ -1027,6 +1048,7 @@ class Egor(cmd.Cmd):
 		creature: The identifier of the creature. (str)
 		scope: How narrow/broad the search should be. (str)
 		"""
+		# Check the combat containers
 		if creature.lower() in self.combatants:
 			creature = self.combatants[creature.lower()]
 		elif creature.isdigit():
@@ -1034,12 +1056,20 @@ class Egor(cmd.Cmd):
 				creature = self.init[int(creature) - 1]
 			except ValueError:
 				raise ValueError('Creature index out of range')
+		# Check non-combat containers outside of combat.
 		elif context == 'open' and creature.lower() in self.pcs:
 			creature = self.pcs[creature.lower()]
 		elif context == 'open' and creature.lower() in self.zoo:
 			creature = self.zoo[creature.lower()]
+		# Warn on not finding the creature.
 		else:
 			raise ValueError(f'No creature named {creature!r} was found.')
+		# Handle ids within groups.
+		if 'group-of' in creature.name:
+			count = creature.name.split('-')[-1]
+			name = creature.name[:creature.name.index('-group')]
+			which = input(f'Which {name} (1-{count})? ')
+			creature = self.get_creature(f'{name}-{which}')
 		return creature
 
 	def load_campaign(self):

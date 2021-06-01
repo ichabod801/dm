@@ -478,6 +478,9 @@ class Egor(cmd.Cmd):
 			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
 		else:
 			print(f'{target.name} now has {target.hp} HP.')
+		# Check for automatic kills.
+		if target.hp == 0 and self.auto_kill and not target.pc:
+			self.do_kill(target.name, quiet = True)
 
 	def do_hp(self, arguments):
 		"""
@@ -530,7 +533,7 @@ class Egor(cmd.Cmd):
 		# Parse the arguments.
 		arg_words = arguments.split()
 		add = '+' in arg_words or 'add' in arg_words
-		encounter = '&' in arg_words or 'encounter' in arg words
+		encounter = '&' in arg_words or 'encounter' in arg_words
 		self.auto_attack = not add and 'auto' in arg_words
 		# Check for the encounter (if it's random the DM will want to know who it is first)
 		if encounter:
@@ -643,7 +646,7 @@ class Egor(cmd.Cmd):
 		print()
 		self.combat_text()
 
-	def do_kill(self, arguments):
+	def do_kill(self, arguments, quiet = False):
 		"""
 		Remove a creature from the initiative order.
 
@@ -663,7 +666,10 @@ class Egor(cmd.Cmd):
 		if death_index < self.init_count:
 			self.init_count -= 1
 		# Show the current status.
-		self.combat_text()
+		if quiet:
+			print(f'{creature.name} has been removed from the initiative order.')
+		else:
+			self.combat_text()
 
 	def do_next(self, arguments):
 		"""
@@ -758,6 +764,9 @@ class Egor(cmd.Cmd):
 
 		The options you can set include:
 		
+		* auto-kill: If set to true/1/yes, Egor automatically removes non-pc
+			creatures from the initiative order when they hit 0 hp. If set to
+			false/0/no, you must manually remove them with the kill command.
 		* campaign: Sets the campaign folder and loads any markdown files from
 			that folder that start with two digits and a period (.).
 		* time-var: Changes or adds time variables (see the time command). Follow
@@ -767,7 +776,18 @@ class Egor(cmd.Cmd):
 		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
-		if option == 'campaign':
+		if option == 'auto-kill':
+			if setting.strip() in ('true', '1', 'yes', 't', 'y'):
+				self.auto_kill = True
+				print('Auto-kill is on.')
+			elif setting.strip() in ('false', '0', 'no', 'f', 'n'):
+				self.auto_kill = False
+				print('Auto-kill is off.')
+			else:
+				print('Invalid setting for auto-kill.')
+				return
+			self.changes = True
+		elif option == 'campaign':
 			self.campaign_folder = setting
 			self.load_campaign()
 			print(f'The campaign at {self.campaign_folder} has been loaded.')
@@ -914,6 +934,8 @@ class Egor(cmd.Cmd):
 			# Save the alarms.
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
+			# Save the auto-kill setting.
+			data.file.write('auto-kill: {}\n'.format(self.auto_kill))
 			# Save the notes with tags (allows deleting notes w/o messing up tags).
 			save_notes = [f'note: {note}' for note in self.notes]
 			for tag, indices in self.tags.items():
@@ -1043,7 +1065,7 @@ class Egor(cmd.Cmd):
 			del target.conditions[condition]
 			print(f'{target.name} no longer has the condition {condition}.')
 		else:
-			print(f'{target.name} did not the condition {condition} to remove.')
+			print(f'{target.name} did not have the condition {condition} to remove.')
 
 	def get_creature(self, creature, context = 'open'):
 		"""
@@ -1090,6 +1112,8 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
+				if tag == 'auto-kill':
+					self.auto_kill = data.strip() == 'True'
 				elif tag == 'campaign':
 					self.campaign_folder = data.strip()
 				elif tag == 'encounter':
@@ -1162,6 +1186,7 @@ class Egor(cmd.Cmd):
 		self.zoo = self.srd.zoo.copy()
 		# Set the default state.
 		self.alarms = []
+		self.auto_kill = True
 		self.campaign_folder = ''
 		self.changes = False
 		self.combatants = {}

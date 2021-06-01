@@ -252,6 +252,8 @@ class SRD(object):
 			self.chapters[name] = self.parse_file(lines)
 		for chapter in self.chapters.values():
 			self.parse_creatures(chapter)
+		for character in self.pcs.values():
+			character.pc = True
 
 	def header_search(self, terms):
 		"""

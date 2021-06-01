@@ -194,6 +194,7 @@ class Creature(object):
 	language: The languages the creature can speak. (str)
 	legendary: Legendary actions the creature can take. (dict of str: str)
 	other_speeds: The creature's non-walking speeds, if any. (str)
+	pc: A flag for the creature being a player character. (bool)
 	saves: The creature's saving throw bonuses. (dict of str: int)
 	skills: The creature's skill bonuses. (dict of str: int)
 	size: The creature's size category. (str)
@@ -277,6 +278,7 @@ class Creature(object):
 		self.init_bonus = 0
 		self.initiative = 0
 		self.legendary = {}
+		self.pc = False
 		self.reactions = {}
 		self.saves = self.bonuses.copy()
 		self.size = 'Medium'

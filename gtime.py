@@ -7,10 +7,11 @@ Classes:
 Alarm: An event that triggers at a given time. (object)
 AlarmByEvent: An alarm that is triggered by a specific event. (Alarm)
 AlarmByTime: An alarm that is triggered at a specific time. (Alarm)
-Calendar: A system for giving a unique identifier to each day. (object)
-Cycle: A repeating sequence of defined periods in a calendar. (object)
+DeviationCalendar: A calender using integers and planned deviations. (object)
+FractionalCalendar: A calendar using fractional year lengths. (object)
+FractionalCycle: A cycle of days based on a fractional number of days. (object)
+StaticCycle: A calendar cycle that never changes. (object)
 Deviation: A change from the normal number of days in a period. (namedtuple)
-Period: A named set of days within a calendar cycle. (namedtuple)
 Time: A time, precise to the minute, with months. (object)
 """
 
@@ -166,7 +167,9 @@ class DeviationCalendar(object):
 	"""
 	A calender using integers and planned deviations. (object)
 
-	# !! redo to drop year_deviations, and calculate year_length from months.
+	Calendars work by creating a year table, which has every day of the year in
+	it, with information about that day. See the year_table method documentation
+	for details. 
 
 	Attributes:
 	calculated_years: The pre-calculated number of days per year. (list of int)
@@ -195,14 +198,24 @@ class DeviationCalendar(object):
 		year_deviations: Deviations in the length of the year. (list of Deviation)
 		month_deviations: Deviations in the length of months. (list of Deviation)
 		"""
+		# Set the given attributes.
 		self.months = months
 		self.month_deviations = month_deviations
 		self.cycles = cycles
+		# Calculate the default year length.
 		self.year_length = sum(months.values())
+		# Calculate the first year.
 		self.calculated_years = [0]
 		self.current_year = self.year_table(1)
 
 	def days_in_year(self, year):
+		"""
+		Calculate how many days are in a given year. (int)
+
+		Parameters:
+		year: The year to get the number of days for. (int)
+		"""
+		# Calculate from months if not already calculated.
 		if year <= len(self.calculated_years):
 			return sum(self.months_in_year(year).values())
 		else:
@@ -242,6 +255,16 @@ class DeviationCalendar(object):
 		"""
 		Calculate a table of days for the year. (dict)
 
+		The year table is a dict with a key for each day by number in the year. The
+		value for that day is a dict of the following keys:
+			* day-of-year: The day's sequence within the year.
+			* day-of-month: The day's sequence within the day's month.
+			* month-name: The name of the month the day is in.
+			* month-number: The number of the month within the year.
+		There are two string keys to the year table as well:
+			* year: The year the table is for.
+			* year-length: The number of days in the year.
+
 		Parameter:
 		year: The year to calculate a table for. (int)
 		"""
@@ -273,12 +296,21 @@ class FractionalCalendar(object):
 	"""
 	A calendar using fractional year lengths. (object)
 
+	Calendars work by creating a year table, which has every day of the year in
+	it, with information about that day. See the year_table method documentation
+	for details. 
+
 	Attributes:
+	current_year: The current year's table from year_table. (dict)
 	months: The months of the year and their length in days. (dict of str: int)
 	overage_month: The month getting an extra day in a long year. (str)
 	year_length: The number of days in the year. (float)
 
 	Methods:
+	days_in_year: Calculate how many days there are in a given year. (int)
+	days_to_year: Calculate how many days there are before a given year. (int)
+	months_in_year: Calculate the month lengths for a given year. (dict)
+	year_table: Calculate a table of days for the year. (dict)
 
 	Overridden Methods:
 	__init__
@@ -336,6 +368,16 @@ class FractionalCalendar(object):
 		"""
 		Calculate a table of days for the year. (dict)
 
+		The year table is a dict with a key for each day by number in the year. The
+		value for that day is a dict of the following keys:
+			* day-of-year: The day's sequence within the year.
+			* day-of-month: The day's sequence within the day's month.
+			* month-name: The name of the month the day is in.
+			* month-number: The number of the month within the year.
+		There are two string keys to the year table as well:
+			* year: The year the table is for.
+			* year-length: The number of days in the year.
+
 		Parameter:
 		year: The year to calculate a table for. (int)
 		"""
@@ -361,69 +403,137 @@ class FractionalCalendar(object):
 					month, month_length = months.pop()
 		return table
 
-class DeviationCycle(object):
+class FractionalCycle(object):
+	"""
+	A calendar cycle based on a fractional number of days. (object)
 
-	def __init__(self, periods, deviations):
+	Attributes:
+	keys: The unique keys for the cycle in year tables. (dict of str: str)
+	name: The name of the cycle. (str)
+	period_length: The length in days of a period in the cycle. (float)
+	periods: The name of the groups of days in the cycle. (list of str)
+
+	Methods:
+	advance_state: Advance a cycle state by one day. (None)
+	expand_table: Expand a year table to include this cycle. (None)
+
+	Overridden Methods:
+	__init__
+	"""
+
+	def __init__(self, name, periods, period_length):
+		"""
+		Set up the cycle's attributes. (None)
+
+		Parameters:
+		name: The name of the cycle. (str)
+		periods: The name of the groups of days in the cycle. (list of str)
+		period_length: The length in days of a period in the cycle. (float)
+		"""
+		# Set the given attributes.
+		self.name = name
 		self.periods = periods
-		self.deviations = deviations
+		self.period_length = period_length
+		self.cycle_length = self.period_length * len(self.periods)
+		# Calcuate keys unique to the cycle for year tables.
+		low_name = name.lower()
+		self.keys = {'number': f'{low_name}-number', 'day': f'{low_name}-day'}
+		self.keys['period'] = f'{low_name}-period'
+		self.keys['period-day'] = f'{low_name}-period-day'
 
-	def advance_state(self, state, year):
-		# !! assumes year does not change if cycle repeats
-		state['cycle-day'] += 1
-		if state['cycle-day'] > sum(state['periods'].values()):
-			state['cycle'] += 1
-			state['cycle-day'] = 1
-			state['period-day'] = 1
-			state['periods'] = self.periods_in_cycle(state['cycle'], year)
-		elif state['period-day'] + 1 > state['periods'][state['period']]:
-			state['period-day'] = 1
-			period_order = list(state['periods'].keys())
-			state['period'] = period_order[period_order.index(state['period']) + 1]
+	def advance_state(self, state, year = 0):
+		"""
+		Advance a cycle state by one day. (None)
+
+		This method assumes year does not change if cycle repeats.
+
+		Parameters:
+		state: The cycle state to advance. (dict)
+		year: The year the cycle is in. (int)
+		"""
+		# Advance the day state.
+		state[self.keys['day']] += 1
+		# Check for end of period.
+		if state[self.keys['day']] > round(state['fractional-days']):
+			# Check for end of cycle.
+			if not state['period-list']:
+				state[self.keys['number']] += 1
+				state['period-list'] = [(period, state[self.keys['number']]) for period in self.periods]
+				state[self.keys['period']], period_count = state['period-list'].pop(0)
+				state['fractional-days'] = self.period_length
+				state[self.keys['day']] = 1
+			else:
+				old_period = state[self.keys['period']]
+				state[self.keys['period']], state[self.keys['number']] = state['period-list'].pop(0)
+				# Check for end of cycle due to overage period.
+				if old_period == state[self.keys['period']]:
+					state['fractional-days'] += self.period_length
+				else:
+					state[self.keys['day']] = 1
+					state['fractional-days'] = self.period_length
+			state[self.keys['period-day']] = 1
 		else:
-			state['period-day'] += 1
+			state[self.keys['period-day']] += 1
 
 	def expand_table(self, year_table, calendar):
-		# Figure out state at beginning of year.
-		previous_days = calendar.days_to_year(year_table['year'])
-		days_cycled = 0
-		cycle = 1
-		year = 1
-		next_year = calendar.days_in_year(1)
-		while True:
-			cycle_periods = periods_in_cycle(cycle, year)
-			days_in_cycle = sum(cycle_periods.values())
-			overage = previous_days - days_cycled - days_in_cycle
-			if overage >= 0:
-				state = {'cycle': cycle, 'periods': cycle_periods, 'cycle-day': overage}
-				period_days = list(period_days.items())
-				period_days.reverse()
-				while overage:
-					period, days_in_period = period_days.pop()
-					if overage > days_in_period:
-						overage -= days_in_period
-					else:
-						state['period'] = period
-						state['period-day'] = overage
-						break
-				break
-			days_cycled += days_in_cycle
-			cycle += 1
-			if days_cycled >= next_year:
-				year += 1
-				next_year += calendar.days_in_year(year)
-		# Cycle on from there.
-		for day in range(1, year_table['year_length'] + 1):
-			self.advance_state(state)
-			year_table[day].update(state)
-			del year_table[day]['period']
+		"""
+		Expand a year table to include this cycle. (None)
 
-	def periods_in_cycle(self, year, cycle):
-		data = {'year': year, 'cycle': cycle}
-		cycle_periods = self.periods.copy()
-		for deviation in self.deviations:
-			if deviation.function(data):
-				cycle_periods[deviation.period] = deviation.new_value
-		return cycle_periods
+		Wait: The phase of the moon (start period day) can be calcuated by total days.
+			maybe that should be the first calculation.
+			this one google might actually be useful one. (No, they use geometry not generally applicable)
+
+		Parameters:
+		year_table: The days of the year and their attributes. (dict)
+		calendar: The calendar that made the year table. (Calendar)
+		"""
+		# Get the overage from last year.
+		previous_days = calendar.days_to_year(year_table['year'])
+		if self.cycle_length >= year_table['year-length']:
+			cycle_count = year_table['year']
+		else:
+			cycle_count = int(previous_days / self.cycle_length) + 1
+		total_length = (int(previous_days / self.period_length) + 1) * self.period_length
+		overage = total_length - previous_days
+		# Figure out which period when over.
+		if year_table['year'] > 1 and overage >= 0.5:
+			# Get the period overlapping into this year.
+			last_year = calendar.days_in_year(year_table['year'] - 1)
+			last_year_periods = int((last_year + overage) / self.period_length)
+			overage_period = self.periods[last_year_periods - 1]
+			period_list = [(overage_period, cycle_count - 1)]
+			# Calculate which day in that period is the first of the year.
+			overage_days = int(round(overage, 0))
+			# Get last year's overage
+			last_period_count = int((previous_days - last_year) / self.period_length) + 1
+			last_total_length = last_period_count * self.period_length
+			last_overage = last_total_length - last_year
+			# Get days in the overlapping period
+			upto_last_period = int(round(last_total_length - self.period_length, 0))
+			last_period_days = int(round(last_total_length - upto_last_period, 0))
+			start_period_day = ((previous_days / self.period_length) % 1) * self.period_length
+			start_period_day = int(round(start_period_day, 0)) + 1
+			start_day = int(round(self.cycle_length)) - (last_period_days - start_period_day)
+			fractional_days = self.cycle_length
+		else:
+			period_list = []
+			start_day = 1
+			start_period_day = 1
+			fractional_days = self.period_length
+		# Expand the full period list.
+		period_list += [(period, cycle_count) for period in self.periods]
+		# Get the initial state.
+		state = {self.keys['number']: period_list[0][1], self.keys['day']: start_day}
+		state[self.keys['period']] = period_list[0][0]
+		state[self.keys['period-day']] = start_period_day
+		state['fractional-days'] = fractional_days
+		state['period-list'] = period_list[1:]
+		# Cycle on from there.
+		for day in range(1, year_table['year-length'] + 1):
+			year_table[day].update(state)
+			#del year_table[day]['fractional-days']
+			del year_table[day]['period-list']
+			self.advance_state(state)
 
 class StaticCycle(object):
 	"""
@@ -437,15 +547,26 @@ class StaticCycle(object):
 
 	Methods:
 	advance_state: Advance a cycle state by one day. (None)
+	expand_table: Expand a year table to include this cycle. (None)
 
 	Overridden Methods:
 	__init__
 	"""
 
 	def __init__(self, name, periods):
+		"""
+		Set up the cycle definition. (None)
+
+		Parameters:
+		name: The name of the cycle. (str)
+		periods: The periods of the cycle. (dict of str: int)
+		"""
+		# Set the given paramters.
 		self.name = name
 		self.periods = periods
+		# Calculate the cycle length.
 		self.cycle_length = sum(periods.values())
+		# Set up unique cycle keys for the year table.
 		low_name = self.name.lower()
 		self.keys = {'number': f'{low_name}-number', 'day': f'{low_name}-day'}
 		self.keys['period'] = f'{low_name}-period'
@@ -491,7 +612,6 @@ class StaticCycle(object):
 		previous_days = calendar.days_to_year(year_table['year'])
 		cycles, overage = divmod(previous_days, self.cycle_length)
 		cycles += 1
-		# ?? Should the cycle number be year indexed?
 		state = {self.keys['number']: cycles, self.keys['day']: overage + 1}
 		# Figure out where in the cycle you are.
 		period_days = list(self.periods.items())
@@ -513,111 +633,8 @@ class StaticCycle(object):
 			year_table[day].update(state)
 			self.advance_state(state)
 
-class Cycle(object):
-	"""
-	A repeating sequence of defined periods in a calendar. (object)
-
-	Cycles include things like weeks, months, and zodiacs.
-
-	Attributes:
-	description: A description of the cycle. (str)
-	deviation: The exceptions to the standard period definitions. (str)
-	format_text: The default text formatting for the cycle. (str)
-	name: The name of the cycle. (str)
-	periods: The periods that make up the cycle. (tuple)
-	singular: The singular form of the name, for formatting. (str)
-	zero: The day the cycle starts. (Time)
-
-	Methods:
-	backward: Move backward the given number of days in the cycle. (None)
-	forward: Move forward the given number of days in the cycle. (None)
-	year_periods: Determine the periods for a given year. (None)
-
-	Overridden Methods:
-	__init__
-	"""
-
-	def __init__(self, node):
-		"""
-		Parse the cycle's definition. (None)
-
-		Parameters:
-		node: The document section contianing the definition. (HeaderNode)
-		"""
-		# Set the default values of the attributes.
-		self.name = node.name
-		self.description = ''
-		self.periods = {}
-		self.deviations = []
-		self.start = 1
-		# Parse out the lines of the definition.
-		table = []
-		for line in node.children[0]:
-			# Assume pipe-table lines define the periods.
-			if line.startswith('|'):
-				table.append(line)
-			# Parse out deviations.
-			elif line.lower().startswith('**deviation**'):
-				period, new_value, method, divisor, *remainders = line[13:].split(',')
-				divisor = int(divisor)
-				remainers = [int(word) for word in remainders]
-				function = lambda data: data[method.strip()] % divisor in remainders
-				self.deviations.append(Deviation(period.strip(), int(new_value), function))
-			elif line.lower().startswith('**start**'):
-				self.start = int(line[9:])
-		# Parse out the periods.
-		for line in table[2:]:
-			name, abbreviation, number, days = line.split('|')[1:]
-			self.periods[name.strip()] = {'abbreviation': abbreviation.strip(), 'number': int(number)}
-			self.periods[name.strip()]['days'] = float(days)
-		# Get the default text formatting.
-		header = table[0].split('|')
-		self.singular = header[1]
-		if max(period.number for period in self.periods) == 1:
-			self.format_text = f'{{{self.singular}}}'
-		else:
-			self.format_text = f'{{{self.singular}}} {{{self.singular}-day}}'
-		# Get the initial state of the cycle.
-		self.state = {'cycle-day': self.start, 'cycle': 1, 'year': 1, 'periods': self.get_periods(1, 1)}
-		start = self.start
-		for period in self.state['periods']:
-			if start <= period.days:
-				self.state['current-period'] = period
-				self.state['period-day'] = start
-				break
-			else:
-				start -= period.days
-
-	def advance(self, days, year):
-		"""
-		Advance the cycle. (None)
-
-		Parameters:
-		days: The number of days to advance the cycle. (int)
-		year: The number of the year after advancement. (int)
-		"""
-		# !! the year being separate is a big problem.
-
-	def get_periods(self, cycle, year):
-		"""
-		Get the periods for a certain year and cycle. (list of tuple)
-
-		Parameters:
-		cycle: The number of the current cycle. (int)
-		year: The number of the current year. (int)
-		"""
-		data = {'cycle': cycle, 'year': year}
-		periods = {name: spec.copy() for name, spec in self.periods}
-		for deviation in self.deviations:
-			if deviation.function(data):
-				periods[deviation.period] = period.new_value
-		return periods
-
 # A change from the normal number of days in a period. (namedtuple)
 Deviation = collections.namedtuple('Deviation', ('period', 'new_value', 'function'))
-
-# A named set of days within a calendar cycle. (namedtuple)
-Period = collections.namedtuple('Period', ('name', 'abbreviation', 'number', 'days'))
 
 @functools.total_ordering
 class Time(object):
@@ -842,7 +859,7 @@ def new_alarm(alarm_spec, now, events = {}):
 if __name__ == '__main__':
 	five_days = {'Wonday': 1, 'Doubleday': 1, 'Treeday': 1, 'Forday': 1, 'Fifday': 1}
 	week = StaticCycle('week', five_days)
+	moon = FractionalCycle('moon', ['Alpha', 'Beta', 'Gamma', 'Delta'], 25.31)
 	thirds = Deviation('First', 30, lambda data: data['year'] % 3 == 0)
-	# !! year four starts on wrong week-name, right week-day.
-	dev_cal = DeviationCalendar({'First': 29, 'Second': 30, 'Third': 31}, [thirds], [week])
+	dev_cal = DeviationCalendar({'First': 29, 'Second': 30, 'Third': 31}, [thirds], [week, moon])
 	frac_cal = FractionalCalendar(90.334, {'First': 29, 'Second': 30, 'Third': 31}, 'First')

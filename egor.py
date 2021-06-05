@@ -20,7 +20,7 @@ import traceback
 
 import creature
 import dice
-import srd
+import markdown
 import gtime
 
 HELP_CONDITIONS = """
@@ -614,7 +614,7 @@ class Egor(cmd.Cmd):
 					# Ask for the initiative bonus if you can't find it.
 					# !! need a way out of this for mistakes.
 					init = int(input('Bad guy initiative bonus: '))
-					data = creature.Creature(srd.HeaderNode(f'# {name}'))
+					data = creature.Creature(markdown.HeaderNode(f'# {name}'))
 					data.init_bonus = init
 				# Create an roll initiative for the bad guys.
 				for bad_guy in range(count):
@@ -1000,12 +1000,12 @@ class Egor(cmd.Cmd):
 				node = search.pop()
 				if node.level < 4:
 					intro = node.children[0]
-					if isinstance(intro, srd.TextNode) and intro.lines[0][:5] in sizes:
+					if isinstance(intro, markdown.TextNode) and intro.lines[0][:5] in sizes:
 						print(intro.parent)
 						monster = creature.Creature(node)
 						self.zoo[monster.name] = monster
 					elif node.level < 3:
-						search = [kid for kid in node.children if isinstance(kid, srd.HeaderNode)] + search
+						search = [kid for kid in node.children if isinstance(kid, markdown.HeaderNode)] + search
 
 	def do_time(self, arguments):
 		"""
@@ -1101,7 +1101,7 @@ class Egor(cmd.Cmd):
 
 	def load_campaign(self):
 		"""Load stored campaign data. (None)"""
-		self.campaign = srd.SRD(self.campaign_folder)
+		self.campaign = markdown.SRD(self.campaign_folder)
 		self.zoo.update(self.campaign.zoo)
 		self.pcs = self.campaign.pcs
 
@@ -1182,7 +1182,7 @@ class Egor(cmd.Cmd):
 	def preloop(self):
 		"""Set up the interface. (None)"""
 		# Load the SRD.
-		self.srd = srd.SRD()
+		self.srd = markdown.SRD()
 		self.zoo = self.srd.zoo.copy()
 		# Set the default state.
 		self.alarms = []

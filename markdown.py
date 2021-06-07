@@ -279,12 +279,12 @@ class SRD(object):
 		search = [node]
 		while search:
 			node = search.pop()
-			if node.level < 4 and node.children:
+			if node.level < 5 and node.children:
 				intro = node.children[0]
 				if isinstance(intro, TextNode) and intro.lines[0][:5] in creature.Creature.sizes:
 					monster = creature.Creature(node)
-					target[monster.name.lower()] = monster
-				elif node.level < 3:
+					target[monster.name.lower().replace(' ', '-')] = monster
+				elif node.level < 4:
 					search.extend([kid for kid in node.children if isinstance(kid, HeaderNode)])
 
 	def parse_file(self, lines):

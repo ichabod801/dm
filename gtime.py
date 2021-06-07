@@ -856,6 +856,32 @@ def new_alarm(alarm_spec, now, events = {}):
 		alarm = AlarmByTime(trigger, note, repeat)
 	return alarm
 
+def parse_calendar(root):
+	"""
+	Parse a text definition of a calendar. (Calendar)
+
+	Parameters:
+	root: The root node of the document tree for the calendar. (HeaderNode)
+	"""
+	calendar_type = 'unknown'
+	for node in root.children:
+		if hasattr(node, lines):
+			for line in node.lines:
+				if line.lower.startswith('**days in year**'):
+					day_text = line.split('**')[-1]
+					if '.' in day_text:
+						days_in_year = float(day_text)
+						calendar_type = 'fractional'
+					else:
+						days_in_year = int(day_text)
+						calendar_type = 'deviation'
+		elif node.name.lower() == 'months':
+			parse_months = False
+			months = {}
+			for line in node.children[0]:
+				if parse_months:
+					pass # !! not finished
+
 if __name__ == '__main__':
 	five_days = {'Wonday': 1, 'Doubleday': 1, 'Treeday': 1, 'Forday': 1, 'Fifday': 1}
 	week = StaticCycle('week', five_days)

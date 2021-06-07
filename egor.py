@@ -76,7 +76,8 @@ should happen, using the alarm command.
 You can store notes about the game with the note command, and later review them
 with the study command. You can also search the Source Resource Document with
 the srd command. You can add your own campaign files in markdown format, and
-they can be loaded as well.
+they can be loaded by using the set command. Once loaded, your campaign files
+can be searched with the campaign command.
 
 The initiative command will allow you to set up an order for combat, using 
 creatures and player characters loaded from the SRD and your campaign files.
@@ -124,7 +125,8 @@ class Egor(cmd.Cmd):
 	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
 	do_ac: Set the armor class modifier for a creature. (None)
-	do_condition: Add a condition to a creature. (con)
+	do_campaign: Search the campaign documents. (None)
+	do_condition: Add a condition to a creature. (None)
 	do_day: Advance the time by day increments. (None)
 	do_encounter: Create an encounter for a later combat. (None)
 	do_heal: Heal a creature. (None)
@@ -147,6 +149,7 @@ class Egor(cmd.Cmd):
 	get_creature: Get a creature to apply a command to. (Creature)
 	load_campaign: Load stored campaign data. (None)
 	load_data: Load any stored state data. (None)
+	markdown_search: Search a markdown document tree. (None)
 	new_note: Store a note. (None)
 
 	Overridden Methods:
@@ -159,8 +162,8 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'@': 'attack', '&': 'note', 'con': 'condition', 'init': 'initiative', 'n': 'next', 
-		'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
+	aliases = {'@': 'attack', '&': 'note', 'camp': 'campaign', 'con': 'condition', 'init': 'initiative', 
+		'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {'conditions': HELP_CONDITIONS, 'help': HELP_GENERAL}
 	prompt = 'Yes, master? '
@@ -319,6 +322,19 @@ class Egor(cmd.Cmd):
 				print(f'   {letter}: {attack}')
 			return
 		print(text)
+
+	def do_campaign(self, arguments):
+		"""
+		Search the campaign documents. (camp)
+
+		The arguments are the terms you want to search by. If you just give some text,
+		Egor tries to find that header with a case insensitive search. If you preced 
+		the terms with a $, it treats the rest of the argument as a regular 
+		expression, and searches the document headers for that. If you precede it with 
+		a +, it treats the rest of the argument as a regular expression, and searches 
+		the document text for that
+		"""
+		self.markdown_search(arguments, self.campaign)
 
 	def do_condition(self, arguments):
 		"""
@@ -878,42 +894,13 @@ class Egor(cmd.Cmd):
 		Search the Source Resource Document.
 
 		The arguments are the terms you want to search by. If you just give some text,
-		Egor tries to find that text with a case insensitive search. If you preced the
-		terms with a $, it treats the rest of the argument as a regular expression, 
-		and searches for that.
-
-		Currently Egor only knows how to search for headers.
+		Egor tries to find that header with a case insensitive search. If you preced 
+		the terms with a $, it treats the rest of the argument as a regular 
+		expression, and searches the document headers for that. If you precede it with 
+		a +, it treats the rest of the argument as a regular expression, and searches 
+		the document text for that
 		"""
-		# Search by regex or text as indicated.
-		if arguments.startswith('$'):
-			regex = re.compile(arguments[1:], re.IGNORECASE)
-			matches = self.srd.header_search(regex)
-		elif arguments.startswith('+'):
-			regex = re.compile(arguments[1:], re.IGNORECASE)
-			matches = self.srd.text_search(regex)
-		else:
-			matches = self.srd.header_search(arguments)
-		if matches:
-			# If necessary, get the player's choice of matches.
-			if len(matches) == 1:
-				choice = '1'
-			else:
-				for match_index, match in enumerate(matches, start = 1):
-					print(f'{match_index}: {match.full_header()}')
-				choice = input('\nWhich section would you like to view (return for none)? ')
-			# Validate the choice.
-			if choice:
-				try:
-					match = matches[int(choice) - 1]
-				except (ValueError, IndexError):
-					print('\nInvalid choice.')
-				else:
-					# Print the chosen section.
-					print()
-					print(match.full_text())
-		else:
-			# Warn the user if there are no matches.
-			print('No matches found.')
+		self.markdown_search(arguments, self.srd)
 
 	def do_stats(self, arguments):
 		"""
@@ -935,7 +922,7 @@ class Egor(cmd.Cmd):
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
 			# Save the auto-kill setting.
-			data.file.write('auto-kill: {}\n'.format(self.auto_kill))
+			data_file.write('auto-kill: {}\n'.format(self.auto_kill))
 			# Save the notes with tags (allows deleting notes w/o messing up tags).
 			save_notes = [f'note: {note}' for note in self.notes]
 			for tag, indices in self.tags.items():
@@ -1132,6 +1119,45 @@ class Egor(cmd.Cmd):
 					var, value = data.split()
 					self.time_vars[var] = value
 
+	def markdown_search(self, arguments, document):
+		"""
+		Search a markdown document tree. (None)
+
+		Parameters:
+		arguments: The user's search terms. (str)
+		document: The document to search. (HeaderNode)
+		"""
+		# Search by regex or text as indicated.
+		if arguments.startswith('$'):
+			regex = re.compile(arguments[1:], re.IGNORECASE)
+			matches = document.header_search(regex)
+		elif arguments.startswith('+'):
+			regex = re.compile(arguments[1:], re.IGNORECASE)
+			matches = document.text_search(regex)
+		else:
+			matches = document.header_search(arguments)
+		if matches:
+			# If necessary, get the player's choice of matches.
+			if len(matches) == 1:
+				choice = '1'
+			else:
+				for match_index, match in enumerate(matches, start = 1):
+					print(f'{match_index}: {match.full_header()}')
+				choice = input('\nWhich section would you like to view (return for none)? ')
+			# Validate the choice.
+			if choice:
+				try:
+					match = matches[int(choice) - 1]
+				except (ValueError, IndexError):
+					print('\nInvalid choice.')
+				else:
+					# Print the chosen section.
+					print()
+					print(match.full_text())
+		else:
+			# Warn the user if there are no matches.
+			print('No matches found.')
+
 	def new_note(self, note_text):
 		"""
 		Store a note. (None)
@@ -1190,6 +1216,7 @@ class Egor(cmd.Cmd):
 		self.campaign_folder = ''
 		self.changes = False
 		self.combatants = {}
+		self.pcs = {}
 		self.encounters = {}
 		self.init = []
 		self.notes = []

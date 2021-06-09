@@ -13,6 +13,11 @@ FractionalCycle: A cycle of days based on a fractional number of days. (object)
 StaticCycle: A calendar cycle that never changes. (object)
 Deviation: A change from the normal number of days in a period. (namedtuple)
 Time: A time, precise to the minute, with months. (object)
+
+Functions:
+new_alarm: Create a new alarm. (Alarm)
+parse_calendar: Parse a text definition of a calendar. (Calendar)
+parse_cycle: Parse a text definition of a calendar cycle. (Cycle)
 """
 
 import collections
@@ -316,7 +321,7 @@ class FractionalCalendar(object):
 	__init__
 	"""
 
-	def __init__(self, year_length, months, overage_month):
+	def __init__(self, year_length, months, overage_month, cycles = []):
 		"""
 		Set up the calendar structure. (None)
 
@@ -328,6 +333,7 @@ class FractionalCalendar(object):
 		self.year_length = year_length
 		self.months = months
 		self.overage_month = overage_month
+		self.cycles = cycles
 		self.current_year = self.year_table(1)
 
 	def days_in_year(self, year):
@@ -401,6 +407,8 @@ class FractionalCalendar(object):
 				month_number += 1
 				if day != year_length:
 					month, month_length = months.pop()
+		for cycle in self.cycles:
+			cycle.expand_table(table, self)
 		return table
 
 class FractionalCycle(object):
@@ -858,29 +866,97 @@ def new_alarm(alarm_spec, now, events = {}):
 
 def parse_calendar(root):
 	"""
-	Parse a text definition of a calendar. (Calendar)
+	Parse text defining a calendar. (DeviationCalendar or FractionalCalendar)
 
 	Parameters:
 	root: The root node of the document tree for the calendar. (HeaderNode)
 	"""
+	# Read the defining document.
 	calendar_type = 'unknown'
+	cycles, deviations = [], []
+	overage_month = ''
 	for node in root.children:
-		if hasattr(node, lines):
+		# Check the initial text for values.
+		if hasattr(node, 'lines'):
 			for line in node.lines:
-				if line.lower.startswith('**days in year**'):
+				# Get days in a year.
+				if line.lower().startswith('**days in year**'):
 					day_text = line.split('**')[-1]
+					# Differentiate fractional and deviation calendars.
 					if '.' in day_text:
 						days_in_year = float(day_text)
 						calendar_type = 'fractional'
 					else:
 						days_in_year = int(day_text)
 						calendar_type = 'deviation'
+				# Get the overage month for fractional years.
+				elif line.lower().startswith('**overage month**'):
+					overage_month = line.split('**')[-1].strip()
+					calendar_type = 'fractional'
+		# Get the list of months.
 		elif node.name.lower() == 'months':
 			parse_months = False
 			months = {}
-			for line in node.children[0]:
+			for line in node.children[0].lines:
 				if parse_months:
-					pass # !! not finished
+					blank, name, days, *junk = line.split('|')
+					months[name.strip()] = int(days)
+				elif line.startswith('|----'):
+					parse_months = True
+		# Get the deviations.
+		elif node.name.lower() == 'deviations':
+			for line in node.children[0].lines:
+				if ',' in line:
+					month, new_days, mod, *values = line.split(',')
+					int_mod = int(mod)
+					int_values = [int(word) for word in values]
+					func = lambda data: data['year'] % int_mod in int_values
+					deviations.append(Deviation(month.strip(), int(new_days), func))
+		# Get the cycles.
+		elif node.name.lower() == 'cycles':
+			for child in node.children:
+				cycles.append(parse_cycle(child))
+	# Set up the calendar.
+	if calendar_type == 'fractional':
+		calendar = FractionalCalendar(days_in_year, months, overage_month, cycles)
+	else:
+		calendar = DeviationCalendar(months, deviations, cycles)
+	return calendar
+
+def parse_cycle(node):
+	"""
+	Parse a text definition of a calendar cycle. (FractionalCycle or StaticCycle)
+
+	Parameters:
+	node: The node of the document tree for the cycle. (HeaderNode)
+	"""
+	# Loop through the text of the description.
+	cycle_type = 'static'
+	period_mode = False
+	periods = {}
+	for line in node.children[0].lines:
+		# Watch for period length definitions.
+		if line.lower().startswith('**period length**'):
+			period_length = float(line.split('**')[-1])
+			cycle_type = 'fractional'
+			periods = []
+		# Assume tables define periods.
+		elif line.startswith('|----'):
+			period_mode = True
+		# Parse tables lines based on inferred cycle type.
+		elif period_mode and line.startswith('|'):
+			if cycle_type == 'static':
+				blank, name, days, *junk = line.split('|')
+				periods[name.strip()] = int(days)
+			else:
+				blank, name, *junk = line.split('|')
+				periods.append(name.strip())
+	# Create cycle based on inferred cycle type.
+	if cycle_type == 'static':
+		cycle = StaticCycle(node.name, periods)
+	else:
+		cycle = FractionalCycle(node.name, periods, period_length)
+	return cycle
 
 if __name__ == '__main__':
 	five_days = {'Wonday': 1, 'Doubleday': 1, 'Treeday': 1, 'Forday': 1, 'Fifday': 1}

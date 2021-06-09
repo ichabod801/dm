@@ -15,6 +15,7 @@ import os
 import re
 
 import creature
+import gtime
 
 class Node(object):
 	"""
@@ -254,6 +255,8 @@ class SRD(object):
 			self.parse_creatures(chapter)
 		for character in self.pcs.values():
 			character.pc = True
+		if 'calendar' in self.chapters:
+			self.calendar = gtime.parse_calendar(self.chapters['calendar'])
 
 	def header_search(self, terms):
 		"""

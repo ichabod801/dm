@@ -127,6 +127,7 @@ class Egor(cmd.Cmd):
 	do_ac: Set the armor class modifier for a creature. (None)
 	do_campaign: Search the campaign documents. (None)
 	do_condition: Add a condition to a creature. (None)
+	do_date: Give the date as specified by the campaign calendar. (None)
 	do_day: Advance the time by day increments. (None)
 	do_encounter: Create an encounter for a later combat. (None)
 	do_heal: Heal a creature. (None)
@@ -353,6 +354,28 @@ class Egor(cmd.Cmd):
 			rounds = -1
 		target.conditions[condition] = rounds
 		print(f'{target.name} now has the condition {condition}.')
+
+	def do_date(self, arguments):
+		"""
+		Give the date as specified by the campaign calendar. 
+
+		You can specify a format name as the argument. Otherwise, you get the default 
+		format for that calendar.
+		"""
+		# Process the format name argument.
+		format_name = arguments.strip().lower()
+		if not format_name:
+			format_name = 'default'
+		# Check for bad formats or no calendar.
+		if self.campaign is None:
+			print('There is no campaign loaded.')
+		elif self.campaign.calendar is None:
+			print('The current campaign has no calendar.')
+		elif format_name not in self.campaign.calendar.formats:
+			print('The current campaign calendar has no format named {!r}.'.format(arguments))
+		else:
+			# Print the date.
+			print(self.campaign.calendar.date(self.time.day, format_name))
 
 	def do_day(self, arguments):
 		"""

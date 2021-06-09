@@ -179,11 +179,15 @@ class DeviationCalendar(object):
 	Attributes:
 	calculated_years: The pre-calculated number of days per year. (list of int)
 	current_year: The current year's table from year_table. (dict)
+	cycles: The other cycles in the year. (list of Cycle)
+	date: Return a formatted date string. (str)
+	formats: The formats for showing dates. (dict of str: str)
 	month_deviations: Deviations in the length of months. (list of Deviation)
 	months: The months of the year and their length in days. (dict of str: int)
 	year_length: The length of the standard year in days. (int)
 
 	Methods:
+	date: Return a formatted date string. (str)
 	days_in_year: Calculate how many days there are in a given year. (int)
 	days_to_year: Calculate how many days there are before a given year. (int)
 	months_in_year: Calculate the month lengths for a given year. (dict)
@@ -193,25 +197,37 @@ class DeviationCalendar(object):
 	__init__
 	"""
 
-	def __init__(self, months, month_deviations = [], cycles = []):
+	def __init__(self, months, month_deviations = [], cycles = [], formats = {}):
 		"""
 		Set up the calendar structure. (None)
 
 		Parameters:
-		year_length: The length of the year in days. (int)
 		months: The months of the year and their length in days. (dict of str: int)
-		year_deviations: Deviations in the length of the year. (list of Deviation)
 		month_deviations: Deviations in the length of months. (list of Deviation)
+		cycles: The other cycles in the year. (list of Cycle)
+		formats: The formats for showing dates. (dict of str: str)
 		"""
 		# Set the given attributes.
 		self.months = months
 		self.month_deviations = month_deviations
 		self.cycles = cycles
+		self.formats = {'default': '{month-name} {day-of-month}'}
+		self.formats.update(formats)
 		# Calculate the default year length.
 		self.year_length = sum(months.values())
 		# Calculate the first year.
 		self.calculated_years = [0]
 		self.current_year = self.year_table(1)
+
+	def date(self, day, format_name = 'default'):
+		"""
+		Return a formatted date string. (str)
+
+		Parameters:
+		day: The day of the current year. (int)
+		format_name: The name of the format to use. (str)
+		"""
+		return self.formats[format_name].format(**self.current_year[day])
 
 	def days_in_year(self, year):
 		"""
@@ -307,6 +323,8 @@ class FractionalCalendar(object):
 
 	Attributes:
 	current_year: The current year's table from year_table. (dict)
+	cycles: The other cycles in the year. (list of Cycle)
+	formats: The formats for showing dates. (dict of str: str)
 	months: The months of the year and their length in days. (dict of str: int)
 	overage_month: The month getting an extra day in a long year. (str)
 	year_length: The number of days in the year. (float)
@@ -321,7 +339,7 @@ class FractionalCalendar(object):
 	__init__
 	"""
 
-	def __init__(self, year_length, months, overage_month, cycles = []):
+	def __init__(self, year_length, months, overage_month, cycles = [], formats = {}):
 		"""
 		Set up the calendar structure. (None)
 
@@ -334,6 +352,8 @@ class FractionalCalendar(object):
 		self.months = months
 		self.overage_month = overage_month
 		self.cycles = cycles
+		self.formats = {'default': '{month-name} {month-day}'}
+		self.formats.update(formats)
 		self.current_year = self.year_table(1)
 
 	def days_in_year(self, year):
@@ -874,6 +894,7 @@ def parse_calendar(root):
 	# Read the defining document.
 	calendar_type = 'unknown'
 	cycles, deviations = [], []
+	formats = {}
 	overage_month = ''
 	for node in root.children:
 		# Check the initial text for values.
@@ -916,11 +937,17 @@ def parse_calendar(root):
 		elif node.name.lower() == 'cycles':
 			for child in node.children:
 				cycles.append(parse_cycle(child))
+		# Get the formats.
+		elif node.name.lower() == 'formats':
+			for line in node.children[0].lines:
+				if '**' in line:
+					blank, name, format_str = line.split('**')
+					formats[name] = format_str
 	# Set up the calendar.
 	if calendar_type == 'fractional':
-		calendar = FractionalCalendar(days_in_year, months, overage_month, cycles)
+		calendar = FractionalCalendar(days_in_year, months, overage_month, cycles, formats)
 	else:
-		calendar = DeviationCalendar(months, deviations, cycles)
+		calendar = DeviationCalendar(months, deviations, cycles, formats)
 	return calendar
 
 def parse_cycle(node):

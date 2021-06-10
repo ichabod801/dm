@@ -95,6 +95,35 @@ using the stats command. The show command prints the initiative order again if
 you lose track of it.
 """
 
+HELP_SIGHT = """
+Lightly obscured: Disadvantage on Perception checks relying on sight. Includes
+   dim light, patch fog, and moderate foliage.
+Heavily obscured: Creatures are blinded when looking into this area. Includes
+   darkness, opaque fog, and dense foliage.
+
+Bright light: Most creatures can see normally.
+Dim light (shadows): Creates a lightly obscured area. Includes twilight or a
+   bright moon.
+Darkness: Creates a heavily obscured area.
+
+Blindsight: Can perceive surroundings without relying on sight, up to a given
+   radius.
+Darkvision: Within range, dim light counts as bright light and darkness counts
+   as dim light. You can't see color with darkvision.
+Truesight: Can see in normal and magical darkness, can see invisible
+   creatures, automatically detects visual illusions as makes all saves 
+   against them, perceives the true form of shapeshifters and things trans-
+   formed by magic. Can also see into the ethereal plane.
+
+Half cover: Grants a +2 bonus to AC and Dexterity saves. Half cover = half
+   the body blocked. Includes low walls, large furniture, a creature, or
+   a thin tree.
+Three-quarters cover: Grants +5 bonus to AC and Dexterity saves. Includes
+   arrow slits and tree trunks.
+Total cover: Can't be targetted directly by an attack or spell. Must be
+   completely concealled.
+"""
+
 class Egor(cmd.Cmd):
 	"""
 	A helper for a D&D Dungeon master. (cmd.Cmd)
@@ -166,7 +195,7 @@ class Egor(cmd.Cmd):
 	aliases = {'@': 'attack', '&': 'note', 'camp': 'campaign', 'con': 'condition', 'init': 'initiative', 
 		'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
-	help_text = {'conditions': HELP_CONDITIONS, 'help': HELP_GENERAL}
+	help_text = {'conditions': HELP_CONDITIONS, 'cover': HELP_SIGHT, 'help': HELP_GENERAL, 'sight': HELP_SIGHT}
 	prompt = 'Yes, master? '
 	tag_regex = re.compile(r'[a-zA-Z0-9\-]+')
 	time_vars = {'combat': '10', 'long-rest': '8:00', 'room': '10', 'short-rest': '60'}

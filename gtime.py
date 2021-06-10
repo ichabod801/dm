@@ -7,8 +7,9 @@ Classes:
 Alarm: An event that triggers at a given time. (object)
 AlarmByEvent: An alarm that is triggered by a specific event. (Alarm)
 AlarmByTime: An alarm that is triggered at a specific time. (Alarm)
-DeviationCalendar: A calender using integers and planned deviations. (object)
-FractionalCalendar: A calendar using fractional year lengths. (object)
+Calendar: A static calendar. (object)
+DeviationCalendar: A calender using integers and planned deviations. (Calendar)
+FractionalCalendar: A calendar using fractional year lengths. (Calendar)
 FractionalCycle: A cycle of days based on a fractional number of days. (object)
 StaticCycle: A calendar cycle that never changes. (object)
 Deviation: A change from the normal number of days in a period. (namedtuple)
@@ -168,9 +169,87 @@ class AlarmByTime(Alarm):
 			repeat = Time.from_str(repeat.replace('-', ' '))
 		return AlarmByTime(trigger, note, repeat)
 
-class DeviationCalendar(object):
+class Calendar(object):
 	"""
-	A calender using integers and planned deviations. (object)
+	A static calendar. (object)
+
+	The months attribute is the names of the months as keys, with the days in each
+	month as the values.
+
+	Attributes:
+	current_year: The current year's table from year_table. (dict)
+	cycles: The other cycles in the year. (list of Cycle)
+	formats: The formats for showing dates. (dict of str: str)
+	months: The months of the year and their length in days. (dict of str: int)
+
+	Methods:
+	date: Return a formatted date string. (str)
+	set_year: The the current year for the calendar. (None)
+	year_table: Calculate a table of days for the year. (dict)
+
+	Overridden Methods:
+	__init__
+	"""
+
+	def __init__(self, months, cycles = [], formats = {}):
+		"""
+		Set up the calendar structure. (None)
+
+		Parameters:
+		months: The months of the year and their length in days. (dict of str: int)
+		cycles: The other cycles in the year. (list of Cycle)
+		formats: The formats for showing dates. (dict of str: str)
+		"""
+		# Set the given attributes.
+		self.months = months
+		self.cycles = cycles
+		self.formats = {'default': '{month-name} {day-of-month}'}
+		self.formats.update(formats)
+		# Calculate the first year.
+		self.set_year(1)
+
+	def date(self, day, format_name = 'default'):
+		"""
+		Return a formatted date string. (str)
+
+		Parameters:
+		day: The day of the current year. (int)
+		format_name: The name of the format to use. (str)
+		"""
+		return self.formats[format_name].format(**self.current_year[day])
+
+	def set_year(self, year):
+		"""
+		Set the current year of the calendar. (None)
+
+		Parameters:
+		year: The year to set the calendar to. (int)
+		"""
+		self.current_year = self.year_table(year)
+
+	def year_table(self, year):
+		"""
+		Calculate a table of days for the year. (dict)
+
+		Parameters:
+		year: The year to set the calendar to. (int)
+		"""
+		year_day = 0
+		month_number = 0
+		table = {'year': year, 'year-length': sum(self.months.values())}
+		for name, days in self.months.items():
+			month_number += 1
+			for day in range(days):
+				year_day += 1
+				table[year_day] = {'day-of-year': year_day, 'day-of-month': day + 1, 'month-name': name,
+					'month-number': month_number}
+		for cycle in self.cycles:
+			cycle.expand_table(table, self)
+		return table
+
+class DeviationCalendar(Calendar):
+	"""
+	A calender using integers and planned deviations. (Calendar)
 
 	Calendars work by creating a year table, which has every day of the year in
 	it, with information about that day. See the year_table method documentation
@@ -178,23 +257,17 @@ class DeviationCalendar(object):
 
 	Attributes:
 	calculated_years: The pre-calculated number of days per year. (list of int)
-	current_year: The current year's table from year_table. (dict)
-	cycles: The other cycles in the year. (list of Cycle)
-	date: Return a formatted date string. (str)
-	formats: The formats for showing dates. (dict of str: str)
 	month_deviations: Deviations in the length of months. (list of Deviation)
-	months: The months of the year and their length in days. (dict of str: int)
 	year_length: The length of the standard year in days. (int)
 
 	Methods:
-	date: Return a formatted date string. (str)
 	days_in_year: Calculate how many days there are in a given year. (int)
 	days_to_year: Calculate how many days there are before a given year. (int)
 	months_in_year: Calculate the month lengths for a given year. (dict)
-	year_table: Calculate a table of days for the year. (dict)
 
 	Overridden Methods:
 	__init__
+	year_table
 	"""
 
 	def __init__(self, months, month_deviations = [], cycles = [], formats = {}):
@@ -207,27 +280,12 @@ class DeviationCalendar(object):
 		cycles: The other cycles in the year. (list of Cycle)
 		formats: The formats for showing dates. (dict of str: str)
 		"""
-		# Set the given attributes.
-		self.months = months
-		self.month_deviations = month_deviations
-		self.cycles = cycles
-		self.formats = {'default': '{month-name} {day-of-month}'}
-		self.formats.update(formats)
-		# Calculate the default year length.
-		self.year_length = sum(months.values())
-		# Calculate the first year.
+		# Do deviation specific set up.
 		self.calculated_years = [0]
-		self.current_year = self.year_table(1)
-
-	def date(self, day, format_name = 'default'):
-		"""
-		Return a formatted date string. (str)
-
-		Parameters:
-		day: The day of the current year. (int)
-		format_name: The name of the format to use. (str)
-		"""
-		return self.formats[format_name].format(**self.current_year[day])
+		self.month_deviations = month_deviations
+		self.year_length = sum(months.values())
+		# Do the base setup.
+		super().__init__(months, cycles, formats)
 
 	def days_in_year(self, year):
 		"""
@@ -292,40 +350,31 @@ class DeviationCalendar(object):
 		# Get the data for the year.
 		year_months = self.months_in_year(year)
 		year_length = sum(year_months.values())
-		months = list(year_months.items())
-		months.reverse()
 		# Loop through days building a year table.
+		year_day = 0
+		month_number = 0
 		table = {'year': year, 'year-length': year_length}
-		month_day = 1
-		month_number = 1
-		month, month_length = months.pop()
-		for day in range(1, year_length + 1):
-			table[day] = {'day-of-year': day, 'day-of-month': month_day, 'month-name': month,
-				'month-number': month_number}
-			month_day += 1
-			# Check for the next month
-			if month_day > month_length:
-				month_day = 1
-				month_number += 1
-				if day != year_length:
-					month, month_length = months.pop()
+		for name, days in year_months.items():
+			month_number += 1
+			for day in range(days):
+				year_day += 1
+				table[year_day] = {'day-of-year': year_day, 'day-of-month': day + 1, 'month-name': name,
+					'month-number': month_number}
+		# Expand the table with any cycles.
 		for cycle in self.cycles:
 			cycle.expand_table(table, self)
 		return table
 
-class FractionalCalendar(object):
+class FractionalCalendar(Calendar):
 	"""
-	A calendar using fractional year lengths. (object)
+	A calendar using fractional year lengths. (Calendar)
 
 	Calendars work by creating a year table, which has every day of the year in
 	it, with information about that day. See the year_table method documentation
 	for details. 
 
 	Attributes:
-	current_year: The current year's table from year_table. (dict)
-	cycles: The other cycles in the year. (list of Cycle)
-	formats: The formats for showing dates. (dict of str: str)
-	months: The months of the year and their length in days. (dict of str: int)
+	months: The months of the year and their length in days. (list of str)
 	overage_month: The month getting an extra day in a long year. (str)
 	year_length: The number of days in the year. (float)
 
@@ -333,10 +382,10 @@ class FractionalCalendar(object):
 	days_in_year: Calculate how many days there are in a given year. (int)
 	days_to_year: Calculate how many days there are before a given year. (int)
 	months_in_year: Calculate the month lengths for a given year. (dict)
-	year_table: Calculate a table of days for the year. (dict)
 
 	Overridden Methods:
 	__init__
+	year_table
 	"""
 
 	def __init__(self, year_length, months, overage_month, cycles = [], formats = {}):
@@ -348,13 +397,11 @@ class FractionalCalendar(object):
 		months: The months of the year and their length in days. (dict of str: int)
 		overage_month: overage_month: The month getting an extra day in a long year. (str)
 		"""
+		# Set the fractional specific attributes.
 		self.year_length = year_length
-		self.months = months
 		self.overage_month = overage_month
-		self.cycles = cycles
-		self.formats = {'default': '{month-name} {month-day}'}
-		self.formats.update(formats)
-		self.current_year = self.year_table(1)
+		# Set the base attributes.
+		super().__init__(months, cycles, formats)
 
 	def days_in_year(self, year):
 		"""
@@ -667,7 +714,7 @@ Deviation = collections.namedtuple('Deviation', ('period', 'new_value', 'functio
 @functools.total_ordering
 class Time(object):
 	"""
-	A time, precise to the minute, with months. (object)
+	A time, precise to the minute, with years. (object)
 
 	Time objects add and subtract with other time objects, tuples, and ints.
 	Tuples are converted to time objects assuming they are of the form (year,

@@ -249,5 +249,254 @@ class TestFracCalLaterUnderage(unittest.TestCase):
 		"""Test a later rounding down of fractional year."""
 		self.assertEqual(90, self.calendar.current_year['year-length'])
 
+class TestFracCycYear01(unittest.TestCase):
+	"""Tests of a FractionalCycle in its first year."""
+
+	def setUp(self):
+		months = {'First': 29, 'Second': 30, 'Third': 31}
+		moon = gtime.FractionalCycle('moon', ['Alpha', 'Beta', 'Gamma', 'Delta'], 25.31)
+		self.calendar = gtime.Calendar(months, cycles = [moon])
+
+	def test_first_end_cycle_day(self):
+		"""Test the cycle day at the end of the first fractional period."""
+		self.assertEqual(26, self.calendar.current_year[26]['moon-day'])
+
+	def test_first_end_cycle_number(self):
+		"""Test the cycle number at the end of the first fractional period."""
+		self.assertEqual(1, self.calendar.current_year[26]['moon-number'])
+
+	def test_first_end_frac_day(self):
+		"""Test the fractional days at the end of the first fractional period."""
+		self.assertAlmostEqual(50.62, self.calendar.current_year[26]['fractional-days'])
+
+	def test_first_end_period_day(self):
+		"""Test the period day at the end of the first fractional period."""
+		self.assertEqual(1, self.calendar.current_year[26]['moon-period-day'])
+
+	def test_first_end_period_name(self):
+		"""Test the period name at the end of the first fractional period."""
+		self.assertEqual('Beta', self.calendar.current_year[26]['moon-period'])
+
+	def test_first_roundnot_cycle_day(self):
+		"""Test the cycle day at the end of the first fractional period not rounded up."""
+		self.assertEqual(77, self.calendar.current_year[77]['moon-day'])
+
+	def test_first_roundnot_cycle_number(self):
+		"""Test the cycle number at the end of the first fractional period not rounded up."""
+		self.assertEqual(1, self.calendar.current_year[77]['moon-number'])
+
+	def test_first_roundnot_frac_day(self):
+		"""Test the fractional days at the end of the first fractional period not rounded up."""
+		self.assertAlmostEqual(101.24, self.calendar.current_year[77]['fractional-days'])
+
+	def test_first_roundnot_period_day(self):
+		"""Test the period day at the end of the first fractional period not rounded up."""
+		self.assertEqual(1, self.calendar.current_year[77]['moon-period-day'])
+
+	def test_first_roundnot_period_name(self):
+		"""Test the period name at the end of the first fractional period not rounded up."""
+		self.assertEqual('Delta', self.calendar.current_year[77]['moon-period'])
+
+	def test_first_roundup_cycle_day(self):
+		"""Test the cycle day at the end of the first rounded-up fractional period."""
+		self.assertEqual(52, self.calendar.current_year[52]['moon-day'])
+
+	def test_first_roundup_cycle_number(self):
+		"""Test the cycle number at the end of the first rounded-up fractional period."""
+		self.assertEqual(1, self.calendar.current_year[52]['moon-number'])
+
+	def test_first_roundup_frac_day(self):
+		"""Test the fractional days at the end of the rounded-up first fractional period."""
+		self.assertAlmostEqual(75.93, self.calendar.current_year[52]['fractional-days'])
+
+	def test_first_roundup_period_day(self):
+		"""Test the period day at the end of the first rounded-up fractional period."""
+		self.assertEqual(1, self.calendar.current_year[52]['moon-period-day'])
+
+	def test_first_roundup_period_name(self):
+		"""Test the period name at the end of the first rounded-up fractional period."""
+		self.assertEqual('Gamma', self.calendar.current_year[52]['moon-period'])
+
+class TestFracCycYear02(unittest.TestCase):
+	"""Tests of a FractionalCycle in its second year."""
+
+	def setUp(self):
+		months = {'First': 29, 'Second': 30, 'Third': 31}
+		moon = gtime.FractionalCycle('moon', ['Alpha', 'Beta', 'Gamma', 'Delta'], 25.31)
+		self.calendar = gtime.Calendar(months, cycles = [moon])
+		self.calendar.set_year(2)
+
+	def test_first_day_cycle_day(self):
+		"""Test the cycle day on the first day of the year."""
+		self.assertEqual(91, self.calendar.current_year[1]['moon-day'])
+
+	def test_first_day_cycle_number(self):
+		"""Test the cycle number on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[1]['moon-number'])
+
+	def test_first_day_frac_day(self):
+		"""Test the fractional days on the first day of the year."""
+		self.assertAlmostEqual(101.24, self.calendar.current_year[1]['fractional-days'])
+
+	def test_first_day_period_day(self):
+		"""Test the period day on the first day of the year."""
+		self.assertEqual(15, self.calendar.current_year[1]['moon-period-day'])
+
+	def test_first_day_period_name(self):
+		"""Test the period name on the first day of the year."""
+		self.assertEqual('Delta', self.calendar.current_year[1]['moon-period'])
+
+	def test_reset_cycle_day(self):
+		"""Test the cycle day on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[12]['moon-day'])
+
+	def test_reset_cycle_number(self):
+		"""Test the cycle number on the first day of the year."""
+		self.assertEqual(2, self.calendar.current_year[12]['moon-number'])
+
+	def test_reset_frac_day(self):
+		"""Test the fractional days on the first day of the year."""
+		self.assertAlmostEqual(25.55, self.calendar.current_year[12]['fractional-days'])
+
+	def test_reset_period_day(self):
+		"""Test the period day on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[12]['moon-period-day'])
+
+	def test_reset_period_name(self):
+		"""Test the period name on the first day of the year."""
+		self.assertEqual('Alpha', self.calendar.current_year[12]['moon-period'])
+
+class TestFracCycYear03(unittest.TestCase):
+	"""Tests of a FractionalCycle in its third year."""
+
+	def setUp(self):
+		months = {'First': 29, 'Second': 30, 'Third': 31}
+		moon = gtime.FractionalCycle('moon', ['Alpha', 'Beta', 'Gamma', 'Delta'], 25.31)
+		self.calendar = gtime.Calendar(months, cycles = [moon])
+		self.calendar.set_year(3)
+
+	def test_first_day_cycle_day(self):
+		"""Test the cycle day on the first day of the year."""
+		self.assertEqual(80, self.calendar.current_year[1]['moon-day'])
+
+	def test_first_day_cycle_number(self):
+		"""Test the cycle number on the first day of the year."""
+		self.assertEqual(2, self.calendar.current_year[1]['moon-number'])
+
+	def test_first_day_frac_day(self):
+		"""Test the fractional days on the first day of the year."""
+		self.assertAlmostEqual(101.48, self.calendar.current_year[1]['fractional-days'])
+
+	def test_first_day_period_day(self):
+		"""Test the period day on the first day of the year."""
+		self.assertEqual(4, self.calendar.current_year[1]['moon-period-day'])
+
+	def test_first_day_period_name(self):
+		"""Test the period name on the first day of the year."""
+		self.assertEqual('Delta', self.calendar.current_year[1]['moon-period'])
+
+	def test_reset_cycle_day(self):
+		"""Test the cycle day on the first day of the next cycle."""
+		self.assertEqual(1, self.calendar.current_year[23]['moon-day'])
+
+	def test_reset_cycle_number(self):
+		"""Test the cycle number on the first day of the next cycle."""
+		self.assertEqual(3, self.calendar.current_year[23]['moon-number'])
+
+	def test_reset_frac_day(self):
+		"""Test the fractional days on the first day of the next cycle."""
+		self.assertAlmostEqual(25.79, self.calendar.current_year[23]['fractional-days'])
+
+	def test_reset_period_day(self):
+		"""Test the period day on the first day of the next cycle."""
+		self.assertEqual(1, self.calendar.current_year[23]['moon-period-day'])
+
+	def test_reset_period_name(self):
+		"""Test the period name on the first day of the next cycle."""
+		self.assertEqual('Alpha', self.calendar.current_year[23]['moon-period'])
+
+class TestStaticCycYear01(unittest.TestCase):
+	"""Test of a StaticCycle in its first year."""
+
+	def setUp(self):
+		months = {'First': 29, 'Second': 30, 'Third': 31}
+		days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+		week = gtime.StaticCycle('weekday', {day: 1 for day in days})
+		self.calendar = gtime.Calendar(months, cycles = [week])
+
+	def test_first_day_cycle_day(self):
+		"""Test the cycle day on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[1]['weekday-day'])
+
+	def test_first_day_cycle_number(self):
+		"""Test the cycle number on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[1]['weekday-number'])
+
+	def test_first_day_period_day(self):
+		"""Test the period day on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[1]['weekday-period-day'])
+
+	def test_first_day_period_name(self):
+		"""Test the period name in the middle of the year."""
+		self.assertEqual('Monday', self.calendar.current_year[1]['weekday-period'])
+
+	def test_mid_year_cycle_day(self):
+		"""Test the cycle day in the middle of the year."""
+		self.assertEqual(3, self.calendar.current_year[45]['weekday-day'])
+
+	def test_mid_year_cycle_number(self):
+		"""Test the cycle number in the middle of the year."""
+		self.assertEqual(7, self.calendar.current_year[45]['weekday-number'])
+
+	def test_mid_year_period_day(self):
+		"""Test the period day in the middle of the year."""
+		self.assertEqual(1, self.calendar.current_year[45]['weekday-period-day'])
+
+	def test_mid_year_period_name(self):
+		"""Test the period name in the middle of the year."""
+		self.assertEqual('Wednesday', self.calendar.current_year[45]['weekday-period'])
+
+class TestStaticCycYear02(unittest.TestCase):
+	"""Test of a StaticCycle in its second year."""
+
+	def setUp(self):
+		months = {'First': 29, 'Second': 30, 'Third': 31}
+		days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+		week = gtime.StaticCycle('weekday', {day: 1 for day in days})
+		self.calendar = gtime.Calendar(months, cycles = [week])
+		self.calendar.set_year(2)
+
+	def test_first_day_cycle_day(self):
+		"""Test the cycle day on the first day of the year."""
+		self.assertEqual(7, self.calendar.current_year[1]['weekday-day'])
+
+	def test_first_day_cycle_number(self):
+		"""Test the cycle number on the first day of the year."""
+		self.assertEqual(13, self.calendar.current_year[1]['weekday-number'])
+
+	def test_first_day_period_day(self):
+		"""Test the period day on the first day of the year."""
+		self.assertEqual(1, self.calendar.current_year[1]['weekday-period-day'])
+
+	def test_first_day_period_name(self):
+		"""Test the period name in the middle of the year."""
+		self.assertEqual('Sunday', self.calendar.current_year[1]['weekday-period'])
+
+	def test_mid_year_cycle_day(self):
+		"""Test the cycle day in the middle of the year."""
+		self.assertEqual(2, self.calendar.current_year[45]['weekday-day'])
+
+	def test_mid_year_cycle_number(self):
+		"""Test the cycle number in the middle of the year."""
+		self.assertEqual(20, self.calendar.current_year[45]['weekday-number'])
+
+	def test_mid_year_period_day(self):
+		"""Test the period day in the middle of the year."""
+		self.assertEqual(1, self.calendar.current_year[45]['weekday-period-day'])
+
+	def test_mid_year_period_name(self):
+		"""Test the period name in the middle of the year."""
+		self.assertEqual('Tuesday', self.calendar.current_year[45]['weekday-period'])
+
 if __name__ == '__main__':
 	unittest.main()

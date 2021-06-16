@@ -415,10 +415,18 @@ class Egor(cmd.Cmd):
 
 		The time is set to 6:00 in the morning on the next day.
 		"""
+		# Change the day.
 		days = int(arguments) if arguments.strip() else 1
+		last_year = self.time.year
 		self.time += gtime.Time(day = days)
+		# Check for year change.
+		if last_year != self.time.year:
+			self.campaign.calendar.set_year(self.time.year)
+			gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
+		# Set to morning.
 		self.time.hour = 6
 		self.time.minute = 0
+		# Update the user and the system tracking.
 		print(self.time)
 		self.changes = True
 		self.alarm_check('day')
@@ -1080,12 +1088,17 @@ class Egor(cmd.Cmd):
 				print('I do not understand that time, master.')
 				return
 			# Add or set as requested.
+			last_year = self.time.year
 			if reset:
 				self.time.hour = time.hour
 				self.time.minute = time.minute
 			else:
 				self.time += time
 			self.changes = True
+			# Check for year change.
+			if last_year != self.time.year:
+				self.campaign.calendar.set_year(self.time.year)
+				gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
 		print(self.time)
 		if words:
 			self.alarm_check(time_spec)
@@ -1143,6 +1156,8 @@ class Egor(cmd.Cmd):
 		self.campaign = markdown.SRD(self.campaign_folder)
 		self.zoo.update(self.campaign.zoo)
 		self.pcs = self.campaign.pcs
+		self.campaign.calendar.set_year(self.time.year)
+		gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
 
 	def load_data(self):
 		"""Load any stored state data. (None)"""

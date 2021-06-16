@@ -506,6 +506,18 @@ class Creature(object):
 		self.reactions[name] = text[1:].strip()
 		return self.reactions, name
 
+	def _parse_saves(self, title, text):
+		"""
+		Parse the creature's saving throw bonuses. (None)
+
+		Parameters:
+		title: The title of the paragraph. (str)
+		text: The text of the paragraph with the creature's saves. (str)
+		"""
+		for save_text in text.split(','):
+			ability, bonus = save_text.split()
+			self.saves[ability.strip().lower()] = int(bonus.strip('+'))
+
 	def _parse_senses(self, title, text):
 		"""
 		Parse the creature's languages. (None)
@@ -536,18 +548,6 @@ class Creature(object):
 			self.sub_type = ''
 		# Get the creature's alignment.
 		self.alignment = line[line.index(',') + 1:].strip(' *')
-
-	def _parse_saves(self, title, text):
-		"""
-		Parse the creature's saving throw bonuses. (None)
-
-		Parameters:
-		title: The title of the paragraph. (str)
-		text: The text of the paragraph with the creature's saves. (str)
-		"""
-		for save_text in text.split(','):
-			ability, bonus = save_text.split()
-			self.saves[ability.strip().lower()] = int(bonus.strip('+'))
 
 	def _parse_skills(self, title, text):
 		"""

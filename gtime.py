@@ -183,6 +183,8 @@ class Calendar(object):
 	months: The months of the year and their length in days. (dict of str: int)
 
 	Methods:
+	days_in_year: Calculate how many days there are in a given year. (int)
+	days_to_year: Calculate how many days there are before a given year. (int)
 	date: Return a formatted date string. (str)
 	set_year: The the current year for the calendar. (None)
 	year_table: Calculate a table of days for the year. (dict)
@@ -207,6 +209,24 @@ class Calendar(object):
 		self.formats.update(formats)
 		# Calculate the first year.
 		self.set_year(1)
+
+	def days_in_year(self, year):
+		"""
+		Calculate how many days are in a given year. (int)
+
+		Parameters:
+		year: The year to get the number of days for. (int)
+		"""
+		return sum(self.months.values())
+
+	def days_to_year(self, year):
+		"""
+		Calculate how many days there are before a given year. (int)
+
+		Parameters:
+		year: The year to calculate the number of days before. (int)
+		"""
+		return sum(self.months.values()) * (year - 1)
 
 	def date(self, day, format_name = 'default'):
 		"""
@@ -261,12 +281,12 @@ class DeviationCalendar(Calendar):
 	year_length: The length of the standard year in days. (int)
 
 	Methods:
-	days_in_year: Calculate how many days there are in a given year. (int)
-	days_to_year: Calculate how many days there are before a given year. (int)
 	months_in_year: Calculate the month lengths for a given year. (dict)
 
 	Overridden Methods:
 	__init__
+	days_in_year
+	days_to_year
 	year_table
 	"""
 
@@ -379,12 +399,12 @@ class FractionalCalendar(Calendar):
 	year_length: The number of days in the year. (float)
 
 	Methods:
-	days_in_year: Calculate how many days there are in a given year. (int)
-	days_to_year: Calculate how many days there are before a given year. (int)
 	months_in_year: Calculate the month lengths for a given year. (dict)
 
 	Overridden Methods:
 	__init__
+	days_in_year
+	days_to_year
 	year_table
 	"""
 
@@ -535,17 +555,19 @@ class FractionalCycle(object):
 				state[self.keys['number']] += 1
 				state['period-list'] = [(period, state[self.keys['number']]) for period in self.periods]
 				state[self.keys['period']], period_count = state['period-list'].pop(0)
-				state['fractional-days'] = self.period_length
+				unused_fraction = state['fractional-days'] - int(state['fractional-days'])
+				state['fractional-days'] = self.period_length + unused_fraction
 				state[self.keys['day']] = 1
 			else:
-				old_period = state[self.keys['period']]
+				old_cycle = state[self.keys['number']]
 				state[self.keys['period']], state[self.keys['number']] = state['period-list'].pop(0)
 				# Check for end of cycle due to overage period.
-				if old_period == state[self.keys['period']]:
+				if old_cycle == state[self.keys['number']]:
 					state['fractional-days'] += self.period_length
 				else:
 					state[self.keys['day']] = 1
-					state['fractional-days'] = self.period_length
+					unused_fraction = state['fractional-days'] - int(state['fractional-days'])
+					state['fractional-days'] = self.period_length + unused_fraction
 			state[self.keys['period-day']] = 1
 		else:
 			state[self.keys['period-day']] += 1
@@ -589,12 +611,17 @@ class FractionalCycle(object):
 			start_period_day = ((previous_days / self.period_length) % 1) * self.period_length
 			start_period_day = int(round(start_period_day, 0)) + 1
 			start_day = int(round(self.cycle_length)) - (last_period_days - start_period_day)
-			fractional_days = self.cycle_length
+			# !! both wrong
+			fractional_days = self.cycle_length + overage - int(overage)
+			fractional_days = self.cycle_length # works for year 2, but not year 3
+			fractional_days = overage + start_day - 1
 		else:
 			period_list = []
 			start_day = 1
 			start_period_day = 1
-			fractional_days = self.period_length
+			# !! both wrong
+			fractional_days = self.period_length + overage - int(overage)
+			fractional_days = self.period_length # works for year 2, but not year 3 (no, not used in either)
 		# Expand the full period list.
 		period_list += [(period, cycle_count) for period in self.periods]
 		# Get the initial state.
@@ -731,6 +758,10 @@ class Time(object):
 	minute: The minute within the hour. (int)
 	year: The year. (int)
 
+	Class Attributes:
+	full_regex: A regular expression matching a full date/time. (Pattern)
+	year_length: How many days are in a year. (int)
+
 	Methods:
 	_rollover_check: Check for rollover/under in time parts after math. (tuple)
 	short: Short text representation. (str)
@@ -748,6 +779,8 @@ class Time(object):
 	"""
 
 	full_regex = re.compile(r'(\d+)/(\d+) (\d+):(\d\d?)')
+
+	year_length = 365
 
 	def __init__(self, year = 0, day = 0, hour = 0, minute = 0):
 		"""
@@ -864,7 +897,9 @@ class Time(object):
 		hour += extra
 		extra, hour = divmod(hour, 24)
 		day += extra
-		extra, day = divmod(day, 365)
+		while day > self.year_length:
+			year += 1
+			day -= self.year_length
 		year += extra
 		return (year, day, hour, minute)
 

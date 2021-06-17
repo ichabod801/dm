@@ -1013,7 +1013,9 @@ def parse_calendar(root):
 					month, new_days, mod, *values = line.split(',')
 					int_mod = int(mod)
 					int_values = [int(word) for word in values]
-					func = lambda data: data['year'] % int_mod in int_values
+					# Done w/ defaults to capture loop values. Otherwise last value is used for all funcs.
+					def func(data, mod = int_mod, values = int_values):
+						return data['year'] % mod in values
 					deviations.append(Deviation(month.strip(), int(new_days), func))
 		# Get the cycles.
 		elif node.name.lower() == 'cycles':

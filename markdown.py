@@ -12,6 +12,7 @@ SRD: A collection of information from the SRD. (object)
 
 import collections
 import os
+import random
 import re
 
 import creature
@@ -218,6 +219,7 @@ class SRD(object):
 	Attributes:
 	chapters: The different files in the SRD. (dict of str: Node)
 	headers: The header nodes in the document. (dict of str: list of HeaderNode)
+	names: The name definitions in the document. (dict)
 	pcs: The creatures from the Player Characters chapter. (dict of str: Creature)
 	zoo: The creatures in the various chapters. (dict of str: Creature)
 
@@ -226,7 +228,9 @@ class SRD(object):
 
 	Methods:
 	header_search: Search the chapters' headers for matches. (list of HeaderNode)
+	parse_creatures: Parse a node for creatures. (None)
 	parse_file: Parse a markdown file from the SRD. (None)
+	parse_names: Parse a node for named lists. (None)
 	read_files: Read the files of the SRD. (dict of str:str)
 	text_search: Search the children's text for matches. (list of HeaderNode)
 
@@ -237,6 +241,7 @@ class SRD(object):
 	file_names = ['01.races', '02.classes', '03.customization', '04.personalization', '05.equipment',
 		'06.abilities', '07.adventuring', '08.combat', '09.spellcasting', '10.spells', '11.gamemastering',
 		'12.treasure', '13.monsters', '14.creatures', '15.npcs']
+	name_part_re = re.compile(r'\{(\w*)\}')
 
 	def __init__(self, folder = 'srd'):
 		"""
@@ -248,6 +253,7 @@ class SRD(object):
 		self.chapters = {}
 		self.pcs = {}
 		self.zoo = {}
+		self.calendar, self.name = None, None
 		self.headers = collections.defaultdict(list)
 		for name, lines in self.read_files(folder).items():
 			self.chapters[name] = self.parse_file(lines)
@@ -257,6 +263,8 @@ class SRD(object):
 			character.pc = True
 		if 'calendar' in self.chapters:
 			self.calendar = gtime.parse_calendar(self.chapters['calendar'])
+		if 'names' in self.chapters:
+			self.parse_names(self.chapters['names'])
 
 	def header_search(self, terms):
 		"""
@@ -270,6 +278,26 @@ class SRD(object):
 		for chapter in self.chapters.values():
 			matches.extend(chapter.header_search(terms))
 		return matches
+
+	def get_name(self, culture, gender):
+		"""
+		Generate a random name based on the Names chapter. (str)
+
+		Parameters:
+		culture: The culture to generate a name for. (str)
+		gender: The gender to generate a name for. (str)
+		"""
+		# Pull the data for that culture/gender.
+		culture = self.names[culture]
+		formats = culture['formats'][gender]
+		format_index = random.randint(1, 100)
+		for chance, gender in formats:
+			if chance <= format_index:
+				break
+		# Generate random name parts for all possible genders.
+		data = {key: random.choice(value) for key, value in culture.items() if key != 'formats'}
+		# Apply the name parts to the gender format.
+		return gender.format(**data)
 
 	def parse_creatures(self, node):
 		"""
@@ -332,6 +360,47 @@ class SRD(object):
 			text.strip()
 			parent.add_child(text)
 		return root
+
+	def parse_names(self, node):
+		"""
+		Parse a node for named lists. (None)
+
+		Parameters:
+		node: The node to parse for name lists. (HeaderNode)
+		"""
+		self.names = {}
+		search = [node]
+		while search:
+			node = search.pop()
+			if node.level == 2:
+				# Second level nodes are name definitions.
+				culture = node.name.lower()
+				self.names[culture] = {'formats': {}}
+				for child in node.children:
+					# Get lists of names.
+					if isinstance(child, TextNode):
+						for line in child.lines:
+							if line.startswith('**'):
+								blank, tag, names = line.split('**')
+								names = [name.strip() for name in names.strip(': ').split(',')]
+								self.names[culture][tag.lower()] = names
+					# Get formats.
+					elif child.level == 3:
+						gender = child.name.lower()
+						self.names[culture]['formats'][gender] = []
+						total = 0
+						for line in child.children[0].lines:
+							# Check for multiple formats with probabilities.
+							if line.startswith('['):
+								chance = int(line[line.index('[') + 1:line.index(']')])
+								parts = line[line.index(']') + 1:].strip()
+								total += chance
+								self.names[culture]['formats'][gender].append((total, parts))
+							elif line:
+								self.names[culture]['formats'][gender].append((100, line))
+			else:
+				# All other nodes should be searched for second level nodes.
+				search.extend([child for child in node.children if isinstance(child, HeaderNode)])
 
 	def read_files(self, folder = 'srd'):
 		"""

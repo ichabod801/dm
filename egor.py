@@ -77,7 +77,9 @@ You can store notes about the game with the note command, and later review them
 with the study command. You can also search the Source Resource Document with
 the srd command. You can add your own campaign files in markdown format, and
 they can be loaded by using the set command. Once loaded, your campaign files
-can be searched with the campaign command.
+can be searched with the campaign command. You can define name formats in the
+Names chapter of your campaign documents, and then use the name command to
+generate random NPC names for different cultures and genders.
 
 The initiative command will allow you to set up an order for combat, using 
 creatures and player characters loaded from the SRD and your campaign files.
@@ -163,6 +165,7 @@ class Egor(cmd.Cmd):
 	do_hit: Do damage to a creature. (None)
 	do_hp: Set a creature's HP. (None)
 	do_kill: Remove a creature from the initiative order. (None)
+	do_name: Generate a random NPC name. (None)
 	do_next: Show the next person in the initiative queue. (None)
 	do_note: Record a note. (None)
 	do_quit: Exit the Egor interface. (True)
@@ -746,6 +749,25 @@ class Egor(cmd.Cmd):
 			print(f'{creature.name} has been removed from the initiative order.')
 		else:
 			self.combat_text()
+
+	def do_name(self, arguments):
+		"""
+		Generate a random NPC name.
+
+		There are two arguments to the name command: the culture/species of the name, 
+		and the gender/type of the name. These are defined in the campaign documents,
+		in the names chapter.
+		"""
+		culture, gender = arguments.split()
+		try:
+			# Print a random name.
+			print(self.campaign.get_name(culture.lower(), gender.lower()))
+		except KeyError:
+			# Catch any errors, and clarify which part is the error.
+			if culture in self.campaign.names:
+				print(f'The {culture} culture does not have {gender} gender or name type.')
+			else:
+				print(f'I do not know of the {culture} culture.')
 
 	def do_next(self, arguments):
 		"""

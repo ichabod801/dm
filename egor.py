@@ -691,6 +691,42 @@ class Egor(cmd.Cmd):
 		self.changes = True
 		print('Your note has been added to the scroll, master.')
 
+	def do_personality(self, arguments):
+		"""
+		Generate a random personality.
+
+		If called with no arguments, the personality command gives you a bond, a flaw,
+		a goal, an ideal, and a trait. You can use any one of those as an argument to
+		just get that type of personality characteristic. Or, you can use an integer
+		argument to get that many characteristics from all types.
+		"""
+		arguments = arguments.strip().lower()
+		# Handle full NPC traits.
+		if not arguments:
+			print(f'Bond: {random.choice(text.BONDS)}.')
+			print(f'Flaw: {random.choice(text.FLAWS)}.')
+			print(f'Goal: {random.choice(text.GOALS)}.')
+			print(f'Ideal: {random.choice(text.IDEALS)}.')
+			print(f'Trait: {random.choice(text.TRAITS)}.')
+		# Handle specific NPC traits.
+		elif arguments == 'bond':
+			print(f'Bond: {random.choice(text.BONDS)}.')
+		elif arguments == 'flaw':
+			print(f'Flaw: {random.choice(text.FLAWS)}.')
+		elif arguments == 'goal':
+			print(f'Goal: {random.choice(text.GOALS)}.')
+		elif arguments == 'ideal':
+			print(f'Ideal: {random.choice(text.IDEALS)}.')
+		elif arguments == 'trait':
+			print(f'Trait: {random.choice(text.TRAITS)}.')
+		# Handle general NPC traits.
+		elif arguments.isdigit():
+			all_traits = text.BONDS + text.FLAWS + text.GOALS + text.IDEALS + text.TRAITS
+			print('; '.join(random.choices(all_traits, k = int(arguments))))
+		# Handle unknown NPC traits.
+		else:
+			print('I have not heard of such a personality type, master.')
+
 	def do_quit(self, arguments):
 		"""Say goodbye to Egor."""
 		if self.changes:

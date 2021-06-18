@@ -292,7 +292,7 @@ class SRD(object):
 		formats = culture['formats'][gender]
 		format_index = random.randint(1, 100)
 		for chance, gender in formats:
-			if chance <= format_index:
+			if format_index <= chance:
 				break
 		# Generate random name parts for all possible genders.
 		data = {key: random.choice(value) for key, value in culture.items() if key != 'formats'}

@@ -5,6 +5,7 @@ Text for the Egor DM Assistant.
 
 Constants:
 BONDS: Possible personality bonds. (list of str)
+CLASSES: The names of the character classes. (list of str)
 FLAWS: Possible personality flaws. (list of str)
 GOALS: Possible personality goals. (list of str)
 HELP_CONDITIONS: Summaries of the various conditions. (str)
@@ -28,6 +29,9 @@ BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 
 	'Owes their life to a foster parent', 'Wanted by an enemy', 'Wanted by the law', 
 	'Wanted by someone powerful', 'Works for the common folk', 'Works for the orphans', 
 	'Works to preserve an ancient text', 'Works for their temple or god']
+
+CLASSES = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 
+	'Sorceror', 'Warlock', 'Wizard']
 
 FLAWS = ['Alcohol addict', 'Angry and violent', 'Blabber mouth', 'Blunt', 'Blinded by a sense of destiny', 
 	'Bloodthirsty', "Can't back down from being called a coward", "Can't keep a secret worth shit", 

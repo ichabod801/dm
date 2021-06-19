@@ -691,6 +691,19 @@ class Egor(cmd.Cmd):
 		self.changes = True
 		print('Your note has been added to the scroll, master.')
 
+	def do_npc(self, arguments):
+		"""
+		Creates a full random NPC.
+		"""
+		culture = random.choice(list(self.campaign.names.keys()))
+		while culture == 'formats':
+			culture = random.choice(list(self.campaign.names.keys()))
+		gender = random.choice(list(self.campaign.names[culture]['formats'].keys()))
+		self.do_name(f'{culture} {gender}')
+		print(gender, culture, random.choice(text.CLASSES))
+		print()
+		self.do_personality('')
+
 	def do_personality(self, arguments):
 		"""
 		Generate a random personality.

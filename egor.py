@@ -20,6 +20,9 @@ import gtime
 import markdown
 import text
 
+WEATHER_DATA = {'temperate':
+	{'spring': (53, 73, 0), 'summer': (64, 83, -2), 'fall': (59, 78, 0), 'winter': (48, 58)}}
+
 class Egor(cmd.Cmd):
 	"""
 	A helper for a D&D Dungeon master. (cmd.Cmd)
@@ -62,6 +65,8 @@ class Egor(cmd.Cmd):
 	do_name: Generate a random NPC name. (None)
 	do_next: Show the next person in the initiative queue. (None)
 	do_note: Record a note. (None)
+	do_npc: Creates a full random NPC. (None)
+	do_personality: Generate a random personality. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_roll: Roll some dice. (None)
 	do_save: Have a creature make a saving throw. (None)
@@ -1085,6 +1090,71 @@ class Egor(cmd.Cmd):
 		else:
 			print(f'{target.name} did not have the condition {condition} to remove.')
 
+	def do_weather(self, arguments):
+		"""
+		Generate random weather.
+
+		The arguments to the weather command are the climate and the season. If you
+		provide no arguments, it will use the default climate and season. The defaults
+		start as temperate and spring, but you can change them with the set command.
+		You can also set the temperature roll, which determines how variable the high
+		and low temperatures are.
+		"""
+		# !! refactor into its own module.
+		# Get the base weather stats.
+		if arguments.strip():
+			climate, season = [word.lower() for word in arguments.plit()]
+		else:
+			climate, season = self.climate, self.season
+		temp_low, temp_high, precip_mod = WEATHER_DATA[climate][season]
+		# Get the day's temperature.
+		temp_roll = dice.d20()
+		weather_roll = dice.roll(self.weather_roll)
+		if 15 <= temp_roll <= 17:
+			temp_low -= weather_roll
+			temp_high -= weather_roll
+		elif temp_roll > 17:
+			temp_low += weather_roll
+			temp_high += weather_roll
+		print(f'The temperature ranges from a low of {temp_low}F to a high of {temp_high}F.')
+		# Warn of weather effects.
+		if temp_low <= 0:
+			print('WARNING: Extreme cold while below 0. DC 10 Con save or exhaustion every hour.')
+			print('   Cold resistance/immunity, cold weather gear, or cold adaptation negates.')
+		elif temp_high >= 100:
+			print('WARNING: Extreme heat while above 100. DC 5 * hour Con save or exhaustion every hour.')
+			print('   Fire resistance/immunity, access to water, or heat adaptation negates.')
+			print('   Heavy clothing or medium or heavy armor gives disadvantage to the save.')
+		# Get the day's wind.
+		wind_roll = dice.d20()
+		if wind_roll < 13:
+			print('There is little to no wind today.')
+		elif wind_roll < 18:
+			print('There is a light wind today.')
+		else:
+			print('There is a strong wind today.')
+			print('WARNING: Ranged attacks and hearing perception checks are at disadvantage.')
+			print('   Open flames are extinguished, fog is dispersed, natural flight is impossible.')
+			print('   Flying creatures must land at the end of their turn.')
+			print('   Consider the possibility of sandstorms or tornados.')
+		# Get the day's precipitation.
+		if temp_high < 32:
+			precip_word = 'snow'
+		elif temp_low < 32:
+			precip_word = 'rain/snow'
+		else:
+			precip_word = 'rain'
+		precip_roll = dice.d20() + precip_mod
+		if precip_roll < 13:
+			print(f'There is no {precip_word} today.')
+		elif precip_roll < 18:
+			print(f'There is light {precip_word} today.')
+		else:
+			print(f'There is heavy {precip_word} today.')
+			print('WARNING: Everything is lightly obscured, disadvantage to sight perception checks.')
+			if 'rain' in precip_word:
+				print('   Heavy rain gives disadvantage to hearing perception, extinguishes open flames.')
+
 	def get_creature(self, creature, context = 'open'):
 		"""
 		Get a creature to apply a command to. (Creature)
@@ -1248,14 +1318,17 @@ class Egor(cmd.Cmd):
 		self.auto_kill = True
 		self.campaign_folder = ''
 		self.changes = False
+		self.climate = 'temperate'
 		self.combatants = {}
 		self.pcs = {}
 		self.encounters = {}
 		self.init = []
 		self.notes = []
+		self.season = 'spring'
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()
 		self.tags = collections.defaultdict(list)
+		self.weather_roll = '1d4*10'
 		# Load any saved state.
 		try:
 			self.load_data()

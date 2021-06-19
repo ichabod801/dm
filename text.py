@@ -4,10 +4,61 @@ text.py
 Text for the Egor DM Assistant.
 
 Constants:
+BONDS: Possible personality bonds. (list of str)
+FLAWS: Possible personality flaws. (list of str)
+GOALS: Possible personality goals. (list of str)
 HELP_CONDITIONS: Summaries of the various conditions. (str)
 HELP_GENERAL: The general help text for Egor. (str)
 HELP_SIGHT: Help text for vision and cover. (str)
+IDEALS: Possible personality ideals. (list of str)
+TRAITS: Possible persoanlity traits. (list of str) 
 """
+
+BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 'Forbidden love', 
+	'Has a treasured possession', 'Helps those who help him', 'Indebted to generous person', 
+	'Indebted to horrible person', 'Indebted to mentor', 'Indebted to an old friend', 'Lost their family', 
+	'Lost their love', 'Loyalty to allies', 'Loyalty to friends', 'Loyal to their nation', 
+	'Loyal to their people', 'Loyalty to their school', 'Loyalty to their sovreign', 
+	'Must outshine their rival', 'Needs family approval', 'Needs to undo a wrong they did to someone', 
+	'Never fail a loved one again', 'Protective of friends', 'Protecting secret knowledge', 
+	'Protects their loved ones', 'Revenge upon a person who abused their power',
+	'Revenge upon those who cast them out', 'Revenge upon those who destroyed their work', 
+	'Revenge upon those who destroyed their homeland', 'Revenge upon those who killed someone they loved', 
+	'Revenge upon those who stole from them', 'Treasures their allies', 'Treasures their friends', 
+	'Owes their life to a foster parent', 'Wanted by an enemy', 'Wanted by the law', 
+	'Wanted by someone powerful', 'Works for the common folk', 'Works for the orphans', 
+	'Works to preserve an ancient text', 'Works for their temple or god']
+
+FLAWS = ['Alcohol addict', 'Angry and violent', 'Blabber mouth', 'Blunt', 'Blinded by a sense of destiny', 
+	'Bloodthirsty', "Can't back down from being called a coward", "Can't keep a secret worth shit", 
+	"Can't lie worth shit", "Can't stand criticism", "Can't stand insults", "Can't stand losing arguments", 
+	'Compulsive liar', 'Constantly chases beauty', 'Conspiracy theorist', 'Coward', 
+	'Coward against stronger forces', 'Deflects blame onto others', 'Desparate for the rare and unique', 
+	'Dislikes bathing', 'Does not trust others', 'Dogmatic', 'Drug addict', 'Easily distracted', 
+	'Elitist', 'Everyone is beneath me', 'Foot in mouth disease', 'Foul mouthed', 'Gambling addict', 
+	'Glutton', 'Greedy', 'Has a hated enemy', 'Hates plans and planning', 'Haunted by their past', 
+	'Incredibly intolerant', 'Jealous of those better than them', 'Kleptomaniac', 'Lazy', 
+	'Likes a good brawl', 'Little respect for those on a different path', 'Loose spender', 
+	'Loves to hurt those in authority', 'Might makes right', 'Needs power to conquer fear', 'Neat freak', 
+	'Never backs down', 'Never forgets a grude', 'No faith in allies', 'Obsessive collector', 'Paranoid', 
+	'Predator/prey mentality', 'Prefers unfair fights', 'Prefers well bred society', 'Proud', 'Reckless', 
+	'Rude', 'Sarcastic and insulting', 'Single-minded pursuit of goals', 'Snobbish about art', 
+	'Snobbish about food', 'Suspicious of outsiders', 'Suspicious of strangers', 
+	'The world revolves around them', 'Thinks they know best', 'Those who died were weak, and deserved it', 
+	'Too many secrets', 'Trusts authority too much', 'Trusts people of the same religion too much', 
+	'Unreliable', 'Very close-minded', 'Very judgemental, even of themselves', 'Vicious gossip', 
+	'Will abandon others to save themselves']
+
+GOALS = ['Get out of poverty', 'Find the answer to a particular question', 'Knowledge is power', 
+	'My own ship', 'My own tavern', 'My own tower', 'Prevent others from having to live the life they did', 
+	'Regain something stolen from them', 'Running from a scandalous past', 
+	'Searching for that special someone', 'Seeks beauty', 'Seeks enlightenment', 'Seeks glory in battle', 
+	'Seeks knowledge', 'Seeks fame', "Seeks power in their organization's hierarchy", 
+	'Seeks redemption for a horrible crime', 'Self improvement through knowledge', 
+	'Trying to win the love of a particular person', 'Wants a noble title', 
+	'Wants to be the best in their field', 'Wants to bring change to the world', 'Wants to make a family', 
+	'Wants to make people happy', 'Wants to make something of themselves', 
+	'Wants to prove themselves to the doubters', 'Wants to uphold ancient traditions']
 
 HELP_CONDITIONS = """
 Blinded: Can't see, fails all checks requiring sight, attacks have dis-
@@ -81,6 +132,9 @@ During combat you are shown an abbreviated stat block for the currently acting
 creature. You can get the full stat block for that (or any other) creature 
 using the stats command. The show command prints the initiative order again if 
 you lose track of it.
+
+You can generate random NPC names with the name command, and random NPC
+personalities with the personality command.
 """
 
 HELP_SIGHT = """
@@ -111,52 +165,6 @@ Three-quarters cover: Grants +5 bonus to AC and Dexterity saves. Includes
 Total cover: Can't be targetted directly by an attack or spell. Must be
    completely concealled.
 """
-
-BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 'Forbidden love', 
-	'Has a treasured possession', 'Helps those who help him', 'Indebted to generous person', 
-	'Indebted to horrible person', 'Indebted to mentor', 'Indebted to an old friend', 'Lost their family', 
-	'Lost their love', 'Loyalty to allies', 'Loyalty to friends', 'Loyal to their nation', 
-	'Loyal to their people', 'Loyalty to their school', 'Loyalty to their sovreign', 
-	'Must outshine their rival', 'Needs family approval', 'Needs to undo a wrong they did to someone', 
-	'Never fail a loved one again', 'Protective of friends', 'Protecting secret knowledge', 
-	'Protects their loved ones', 'Revenge upon a person who abused their power',
-	'Revenge upon those who cast them out', 'Revenge upon those who destroyed their work', 
-	'Revenge upon those who destroyed their homeland', 'Revenge upon those who killed someone they loved', 
-	'Revenge upon those who stole from them', 'Treasures their allies', 'Treasures their friends', 
-	'Owes their life to a foster parent', 'Wanted by an enemy', 'Wanted by the law', 
-	'Wanted by someone powerful', 'Works for the common folk', 'Works for the orphans', 
-	'Works to preserve an ancient text', 'Works for their temple or god']
-
-FLAWS = ['Alcohol addict', 'Angry and violent', 'Blabber mouth', 'Blunt', 'Blinded by a sense of destiny', 
-	'Bloodthirsty', "Can't back down from being called a coward", "Can't keep a secret worth shit", 
-	"Can't lie worth shit", "Can't stand criticism", "Can't stand insults", "Can't stand losing arguments", 
-	'Compulsive liar', 'Constantly chases beauty', 'Conspiracy theorist', 'Coward', 
-	'Coward against stronger forces', 'Deflects blame onto others', 'Desparate for the rare and unique', 
-	'Dislikes bathing', 'Does not trust others', 'Dogmatic', 'Drug addict', 'Easily distracted', 
-	'Elitist', 'Everyone is beneath me', 'Foot in mouth disease', 'Foul mouthed', 'Gambling addict', 
-	'Glutton', 'Greedy', 'Has a hated enemy', 'Hates plans and planning', 'Haunted by their past', 
-	'Incredibly intolerant', 'Jealous of those better than them', 'Kleptomaniac', 'Lazy', 
-	'Likes a good brawl', 'Little respect for those on a different path', 'Loose spender', 
-	'Loves to hurt those in authority', 'Might makes right', 'Needs power to conquer fear', 'Neat freak', 
-	'Never backs down', 'Never forgets a grude', 'No faith in allies', 'Obsessive collector', 'Paranoid', 
-	'Predator/prey mentality', 'Prefers unfair fights', 'Prefers well bred society', 'Proud', 'Reckless', 
-	'Rude', 'Sarcastic and insulting', 'Single-minded pursuit of goals', 'Snobbish about art', 
-	'Snobbish about food', 'Suspicious of outsiders', 'Suspicious of strangers', 
-	'The world revolves around them', 'Thinks they know best', 'Those who died were weak, and deserved it', 
-	'Too many secrets', 'Trusts authority too much', 'Trusts people of the same religion too much', 
-	'Unreliable', 'Very close-minded', 'Very judgemental, even of themselves', 'Vicious gossip', 
-	'Will abandon others to save themselves']
-
-GOALS = ['Get out of poverty', 'Find the answer to a particular question', 'Knowledge is power', 
-	'My own ship', 'My own tavern', 'My own tower', 'Prevent others from having to live the life they did', 
-	'Regain something stolen from them', 'Running from a scandalous past', 
-	'Searching for that special someone', 'Seeks beauty', 'Seeks enlightenment', 'Seeks glory in battle', 
-	'Seeks knowledge', 'Seeks fame', "Seeks power in their organization's hierarchy", 
-	'Seeks redemption for a horrible crime', 'Self improvement through knowledge', 
-	'Trying to win the love of a particular person', 'Wants a noble title', 
-	'Wants to be the best in their field', 'Wants to bring change to the world', 'Wants to make a family', 
-	'Wants to make people happy', 'Wants to make something of themselves', 
-	'Wants to prove themselves to the doubters', 'Wants to uphold ancient traditions']
 
 IDEALS = ['Avoids hurting the poor', 'Beauty is truth', 'Believes they have a destiny to fulfill', 
 	"Can't stand bullies", 'Community', 'Death to tyrants', 'Do not meddle in the affairs of others', 

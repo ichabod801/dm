@@ -722,7 +722,7 @@ class Egor(cmd.Cmd):
 		# Handle general NPC traits.
 		elif arguments.isdigit():
 			all_traits = text.BONDS + text.FLAWS + text.GOALS + text.IDEALS + text.TRAITS
-			print('; '.join(random.choices(all_traits, k = int(arguments))))
+			print('\n'.join(random.choices(all_traits, k = int(arguments))))
 		# Handle unknown NPC traits.
 		else:
 			print('I have not heard of such a personality type, master.')

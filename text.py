@@ -6,13 +6,17 @@ Text for the Egor DM Assistant.
 Constants:
 BONDS: Possible personality bonds. (list of str)
 CLASSES: The names of the character classes. (list of str)
+EXTREME_COLD: A warning message for low temperatures. (str)
+EXTREME_HEAT: A warning message for high temperatures. (str)
 FLAWS: Possible personality flaws. (list of str)
 GOALS: Possible personality goals. (list of str)
+HEAVY_PRECIPITATION: A warning for heavy rain or snow. (str)
 HELP_CONDITIONS: Summaries of the various conditions. (str)
 HELP_GENERAL: The general help text for Egor. (str)
 HELP_SIGHT: Help text for vision and cover. (str)
 IDEALS: Possible personality ideals. (list of str)
-TRAITS: Possible persoanlity traits. (list of str) 
+STRONG_WIND: A warning about high winds. (str)
+TRAITS: Possible persoanlity traits. (list of str)
 """
 
 BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 'Forbidden love', 
@@ -32,6 +36,22 @@ BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 
 
 CLASSES = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 
 	'Sorceror', 'Warlock', 'Wizard']
+
+EXTREME_COLD = """
+WARNING: Extreme cold while temperatures are below 1F. Characters must make a 
+   DC 10 Constitution save or gain one level of exhaustion every hour. The
+   save is not required for characters with cold resistance, cold immunity,
+   cold weather gear, or a racial heritage adapted to cold temperatures.
+"""
+
+EXTREME_HEAT = """
+WARNING: Extreme heat while temperatures are above 99F. Characters must make a 
+   Constitution save (DC 5 for the first hour, +1 every hour after that) or 
+   gain one level of exhaustion every hour. Characters in medium armor, heavy
+   armor, heavy clothing have disadvantage on the save. The save is not 
+   required for characters with fire resistance, fire immunity, access to
+   water, or a racial heritage adapted to hot temperatures.
+"""
 
 FLAWS = ['Alcohol addict', 'Angry and violent', 'Blabber mouth', 'Blunt', 'Blinded by a sense of destiny', 
 	'Bloodthirsty', "Can't back down from being called a coward", "Can't keep a secret worth shit", 
@@ -63,6 +83,13 @@ GOALS = ['Get out of poverty', 'Find the answer to a particular question', 'Know
 	'Wants to be the best in their field', 'Wants to bring change to the world', 'Wants to make a family', 
 	'Wants to make people happy', 'Wants to make something of themselves', 
 	'Wants to prove themselves to the doubters', 'Wants to uphold ancient traditions']
+
+HEAVY_PRECIPITATION = """
+WARNING: An area with heavy precipitation is lightly obscured, and sight
+   preception checks are at disadvantage. If it is raining, hearing 
+   perception checks are also at disadvantage. Heavy rain also extinguishes
+   open flames.
+"""
 
 HELP_CONDITIONS = """
 Blinded: Can't see, fails all checks requiring sight, attacks have dis-
@@ -182,6 +209,14 @@ IDEALS = ['Avoids hurting the poor', 'Beauty is truth', 'Believes they have a de
 	'The low shall be lifted and the high shall fall', 'The strong must protect the weak', 
 	'The world changes and we must adapt to the changes', 'To thine own self be true', 'Values bold action', 
 	'Values creativity', 'Works for the redemption of others']
+
+STRONG_WIND = """
+WARNING: Ranged attacks and hearing perception checks are at disadvantage. Open
+   flames are extinguished, fog is dispersed, natural flight is impossible. All
+   flying creatures must land at the end of their turn or fall. Consider the 
+   possibility of sandstorms or tornados. Sandstorms give disadvantage to sight
+   perception checks.
+"""
 
 TRAITS = ['Absent minded', 'Always has a backup plan', 'Always helps those in trouble', 
 	'Always has a relevant proverb/maxim.', 'Always has a relevant story', 'Always thinks things through', 

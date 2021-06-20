@@ -1097,17 +1097,29 @@ class Egor(cmd.Cmd):
 		start as temperate and spring, but you can change them with the set command.
 		You can also set the temperature roll, which determines how variable the high
 		and low temperatures are.
+
+		Available climates include: cold-arid (not quite desert), cold-desert, 
+		continental (south Canada/centra Asia), hot-arid, hot-desert, ice-cap,
+		mediterranean, monsoon, oceanic (Pacific Northwest), rainforest, sub-arctic
+		(colder continental), sub-polar (colder temperate), sub-tropical, temperate,
+		and tudra.
 		"""
 		# Parse the arguments.
 		if arguments.strip():
-			climate, season = [word.lower() for word in arguments.plit()]
+			climate, season = [word.lower() for word in arguments.split()]
 		else:
 			climate, season = self.climate, self.season
 		# Get and print the weather messages.
-		temp_low, temp_high, message = weather.temperature(climate, season, self.weather_roll)
-		print(message)
-		print(weather.wind())
-		print(weather.precipitation(climate, season, temp_low, temp_high))
+		try:
+			temp_low, temp_high, message = weather.temperature(climate, season, self.weather_roll)
+			print(message)
+			print(weather.wind())
+			print(weather.precipitation(climate, season, temp_low, temp_high))
+		except KeyError:
+			if season in ('spring', 'summer', 'fall', 'winter'):
+				print('I do not recognize that climate.')
+			else:
+				print('I do not recognize that season.')
 
 	def get_creature(self, creature, context = 'open'):
 		"""

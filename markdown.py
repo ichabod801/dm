@@ -233,6 +233,7 @@ class SRD(object):
 	parse_creatures: Parse a node for creatures. (None)
 	parse_file: Parse a markdown file from the SRD. (None)
 	parse_names: Parse a node for named lists. (None)
+	parse_tables: Parse a node for a rollable table. (None)
 	read_files: Read the files of the SRD. (dict of str:str)
 	text_search: Search the children's text for matches. (list of HeaderNode)
 
@@ -427,13 +428,11 @@ class SRD(object):
 					for line in child.lines:
 						# Find tables by their header.
 						if line.startswith('**Table'):
-							#print(line)
 							mode = 'table'
 							name = line[7:-2].strip('- \t')
 						# Only scan ones with a roll for the first column.
 						elif mode == 'table' and line.startswith('|'):
 							if dice.TIGHT_REGEX.search(line[1:line.index('|', 2)]):
-								#print(line)
 								mode = 'rollable'
 								roll = line[1:line.index('|', 2)].strip()
 								rows = []
@@ -441,13 +440,14 @@ class SRD(object):
 								mode = 'text'
 						# Store all of the text rows of the table
 						elif mode == 'rollable' and line.startswith('|'):
-							#print(line)
 							rows.append(line)
 						# Create and store the table.
 						elif mode == 'rollable':
-							#print('Storing', name)
-							self.tables[name] = Table(name, roll, rows)
+							self.tables[name.lower()] = Table(name, roll, rows)
 							mode = 'text'
+					# Catch tables at the end of the text.
+					if mode == 'rollable':
+						self.tables[name.lower()] = Table(name, roll, rows)
 
 	def read_files(self, folder = 'srd'):
 		"""
@@ -520,6 +520,8 @@ class Table(object):
 				elif value.strip().isdigit():
 					low = int(value)
 					high = low
+				else:
+					continue
 			else:
 				continue
 			self.rows.append((low, high, result.strip()))

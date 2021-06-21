@@ -74,6 +74,7 @@ class Egor(cmd.Cmd):
 	do_stats: Show the full stat block for a given creature. (None)
 	do_store: Save the current data. (None)
 	do_study: Study previously recorded notes. (None)
+	do_table: Roll on a table in the SRD or a campaign file. (None)
 	do_time: Update the current game time. (None)
 	do_uncondition: Remove a condition from a creature. (None)
 	get_creature: Get a creature to apply a command to. (Creature)
@@ -1037,9 +1038,46 @@ class Egor(cmd.Cmd):
 	def do_table(self, arguments):
 		"""
 		Roll on a table in the SRD or a campaign file.
+
+		The argument to the table command is the name of the table. If you start the
+		name with '$', the rest of the name is treated as a regular expression for 
+		searching the known table names. You can also use 'list' as an argument to 
+		list all tables in the system.
 		"""
-		if arguments in self.srd.tables:
-			print(self.srd.tables[arguments].roll())
+		# Parse the name.
+		name = arguments.strip().lower()
+		# Handle simple calls by name.
+		if name in self.tables:
+			print(self.tables[name].roll())
+		# Handle calls using a regular expression.
+		elif name.startswith('$'):
+			regex = re.compile(name[1:])
+			names = [name for name in self.tables.keys() if regex.search(name)]
+			# Choose a single result.
+			if len(names) == 1:
+				table = names[0]
+			# Get the user's choice for mutliple results.
+			elif names:
+				for name_index, name in enumerate(names, start = 1):
+					print(f'{name_index}: {name.title()}')
+				choice = input('\nWhich table would you like to roll on? ')
+				table = names[int(choice) - 1]
+				print()
+			# Warning the user if there were no results.
+			else:
+				print('No matching tables were found.')
+				return
+			# Print the result.
+			print(self.tables[table].roll())
+		# Handle requests for a list of tables.
+		elif name == 'list':
+			names = [name.title() for name in self.tables.keys()]
+			names.sort()
+			print('\n'.join(names))
+		# Handle unknown tables.
+		else:
+			print(f'I do not know the table {arguments!r}.')
+			print("You can list all known tables with 'table list'.")
 
 	def do_test(self, arguments):
 		"""
@@ -1193,6 +1231,9 @@ class Egor(cmd.Cmd):
 	def load_campaign(self):
 		"""Load stored campaign data. (None)"""
 		self.campaign = markdown.SRD(self.campaign_folder)
+		self.tables = self.srd.tables.copy()
+		self.tables.update(self.campaign.tables)
+		self.zoo = self.srd.zoo.copy()
 		self.zoo.update(self.campaign.zoo)
 		self.pcs = self.campaign.pcs
 		self.campaign.calendar.set_year(self.time.year)
@@ -1321,6 +1362,7 @@ class Egor(cmd.Cmd):
 		"""Set up the interface. (None)"""
 		# Load the SRD.
 		self.srd = markdown.SRD()
+		self.tables = self.srd.tables.copy()
 		self.zoo = self.srd.zoo.copy()
 		# Set the default state.
 		self.alarms = []

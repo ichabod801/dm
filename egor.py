@@ -812,12 +812,15 @@ class Egor(cmd.Cmd):
 		* auto-kill: If set to true/1/yes, Egor automatically removes non-pc
 			creatures from the initiative order when they hit 0 hp. If set to
 			false/0/no, you must manually remove them with the kill command.
-		* campaign: Sets the campaign folder and loads any markdown files from
-			that folder that start with two digits and a period (.).
+		* campaign: Sets the campaign folder and loads any markdown files from that
+			folder that start with two digits and a period (.).
+		* climate: Sets the default climate for the weather command.
+		* season: Sets the default season for the weather command.
 		* time-var: Changes or adds time variables (see the time command). Follow
 			time-var with a time variable name and a time specification, such as
 			'set time-var short-rest 5'. Setting a time variable to another time
 			variable does not work.
+		* weather-roll: Sets the roll for how extreme high and low temperatures are.
 		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
@@ -837,12 +840,35 @@ class Egor(cmd.Cmd):
 			self.load_campaign()
 			print(f'The campaign at {self.campaign_folder} has been loaded.')
 			self.changes = True
+		elif option == 'climate':
+			if setting.lower() in weather.WEATHER_DATA:
+				self.climate = setting.lower()
+				print(f'The climate has been set to {self.climate}.')
+				self.changes = True
+			else:
+				print(f'I do not recognize the climate {setting!r}.')
+		elif option == 'season':
+			if setting.lower() in ('spring', 'summer', 'winter', 'fall'):
+				self.season = setting.lower()
+				print(f'The season has been set to {self.season}.')
+				self.changes = True
+			else:
+				print(f'I do not recognize the season {setting!r}.')
 		elif option == 'time-var':
 			variable, value = setting.split()
 			variable = variable.lower()
 			self.time_vars[variable] = value
 			print(f'The time variable {variable} was set to {value}.')
 			self.changes = True
+		elif option == 'weather-roll':
+			try:
+				dice.roll(setting)
+			except:
+				print(f'{setting!r} is not a valid die roll.')
+			else:
+				self.weather_roll = setting.lower()
+				print(f'The weather roll has been set to {self.weather_roll}.')
+				self.changes = True
 		else:
 			print(f'I do not recognize the option {option!r}, master.')
 
@@ -974,6 +1000,10 @@ class Egor(cmd.Cmd):
 					bad_texts = [f'{name}, {count}' for name, count in bad_guys]
 					enc_text = 'encounter: {} = {}\n'.format(name, '; '.join(bad_texts))
 					data_file.write(enc_text)
+			# Save the weather data.
+			data_file.write('climate: {}\n'.format(self.climate))
+			data_file.write('season: {}\n'.format(self.season))
+			data_file.write('weather-roll: {}\n'.format(self.weather_roll))
 		self.changes = False
 		print('I have stored all of the incantations, master.')
 
@@ -1168,10 +1198,12 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
-				if tag == 'auto-kill':
+				elif tag == 'auto-kill':
 					self.auto_kill = data.strip() == 'True'
 				elif tag == 'campaign':
 					self.campaign_folder = data.strip()
+				elif tag == 'climate':
+					self.climate = data.strip()
 				elif tag == 'encounter':
 					name, bad_guys = data.split('=')
 					name = name.strip()
@@ -1182,11 +1214,15 @@ class Egor(cmd.Cmd):
 						self.encounters[name].append((bad_name.strip(), count.strip()))
 				elif tag == 'note':
 					self.new_note(data.strip())
+				elif tag == 'season':
+					self.season = data.strip()
 				elif tag == 'time':
 					self.time = gtime.Time.from_str(data.strip())
 				elif tag == 'time-var':
 					var, value = data.split()
 					self.time_vars[var] = value
+				elif tag == 'weather-roll':
+					self.weather_roll = data.strip()
 
 	def markdown_search(self, arguments, document):
 		"""

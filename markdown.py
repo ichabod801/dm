@@ -8,6 +8,7 @@ Node: A node in a document tree. (object)
 HeaderNode: A header in a document tree. (object)
 TextNode: A section of text in a document tree. (object)
 SRD: A collection of information from the SRD. (object)
+Table: A rollable table in a markdown document. (object)
 """
 
 import collections
@@ -16,6 +17,7 @@ import random
 import re
 
 import creature
+import dice
 import gtime
 
 class Node(object):
@@ -252,6 +254,7 @@ class SRD(object):
 		"""
 		self.chapters = {}
 		self.pcs = {}
+		self.tables = {}
 		self.zoo = {}
 		self.calendar, self.name = None, None
 		self.headers = collections.defaultdict(list)
@@ -259,6 +262,7 @@ class SRD(object):
 			self.chapters[name] = self.parse_file(lines)
 		for chapter in self.chapters.values():
 			self.parse_creatures(chapter)
+			self.parse_tables(chapter)
 		for character in self.pcs.values():
 			character.pc = True
 		if 'calendar' in self.chapters:
@@ -402,6 +406,49 @@ class SRD(object):
 				# All other nodes should be searched for second level nodes.
 				search.extend([child for child in node.children if isinstance(child, HeaderNode)])
 
+	def parse_tables(self, node):
+		"""
+		Parse a node for a rollable table. (None)
+
+		Parameters:
+		node: The node to parse for tables. (HeaderNode)
+		"""
+		# Seach the header tree.
+		search = [node]
+		while search:
+			node = search.pop()
+			for child in node.children:
+				# Continue to search from headers.
+				if isinstance(child, HeaderNode):
+					search.append(child)
+				# Scan for tables in text.
+				else:
+					mode = 'text'
+					for line in child.lines:
+						# Find tables by their header.
+						if line.startswith('**Table'):
+							#print(line)
+							mode = 'table'
+							name = line[7:-2].strip('- \t')
+						# Only scan ones with a roll for the first column.
+						elif mode == 'table' and line.startswith('|'):
+							if dice.TIGHT_REGEX.search(line[1:line.index('|', 2)]):
+								#print(line)
+								mode = 'rollable'
+								roll = line[1:line.index('|', 2)].strip()
+								rows = []
+							else:
+								mode = 'text'
+						# Store all of the text rows of the table
+						elif mode == 'rollable' and line.startswith('|'):
+							#print(line)
+							rows.append(line)
+						# Create and store the table.
+						elif mode == 'rollable':
+							#print('Storing', name)
+							self.tables[name] = Table(name, roll, rows)
+							mode = 'text'
+
 	def read_files(self, folder = 'srd'):
 		"""
 		Read the files of the SRD. (dict of str:str)
@@ -428,6 +475,62 @@ class SRD(object):
 		for chapter in self.chapters.values():
 			matches.extend(chapter.text_search(terms))
 		return matches
+
+class Table(object):
+	"""
+	A rollable table in a markdown document. (object)
+
+	Attributes:
+	name: The name of the table. (str)
+	die_roll: The roll used to read the table. (str)
+	rows: The possible results from the table. (list of tuple)
+
+	Class Attributes:
+	value_regex: A pattern for one or two dash-separated integers. (Pattern)
+
+	Methods:
+	roll: Generate a result from the table. (str)
+
+	Overridden Methods:
+	__init__
+	"""
+
+	value_regex = re.compile(r'\d+\-?\d*')
+
+	def __init__(self, name, roll, rows):
+		"""
+		Finish parsing the table rows. (None)
+
+		Parameters:
+		name: The name of the table. (str)
+		roll: The roll used to read the table. (str)
+		rows: The rows of the table. (list of str)
+		"""
+		# Store the base attributes
+		self.name = name
+		self.die_roll = roll
+		# Parse the text rows of the table.
+		self.rows = []
+		for row in rows:
+			blank, value, result, *junk = row.split('|')
+			# Handle ranges of values vs. single values
+			if self.value_regex.search(value):
+				if '-' in value:
+					low, high = [int(word) for word in value.split('-')]
+				elif value.strip().isdigit():
+					low = int(value)
+					high = low
+			else:
+				continue
+			self.rows.append((low, high, result.strip()))
+
+	def roll(self):
+		"""Generate a result from the table. (str)"""
+		value = dice.roll(self.die_roll)
+		for low, high, result in self.rows:
+			if low <= value <= high:
+				break
+		return result
 
 if __name__ == '__main__':
 	srd = SRD()

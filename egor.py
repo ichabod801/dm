@@ -1034,6 +1034,13 @@ class Egor(cmd.Cmd):
 			else:
 				print(f'I do not know the tag {arguments!r}, master.')
 
+	def do_table(self, arguments):
+		"""
+		Roll on a table in the SRD or a campaign file.
+		"""
+		if arguments in self.srd.tables:
+			print(self.srd.tables[arguments].roll())
+
 	def do_test(self, arguments):
 		"""
 		Test code used during development. (None)

@@ -16,6 +16,7 @@ The DICE_REGEX pattern has the following groups:
 
 Constants:
 DICE_REGEX: A regular expression for the die roll syntax. (Pattern)
+TIGHT_REGEX: A regular expression for a die roll that requires sides. (Pattern)
 
 Functions:
 d20: Roll a d20, possibly with advantage. (int)
@@ -27,6 +28,7 @@ import random
 import re
 
 DICE_REGEX = re.compile(r'((\d*)x)?\s*(\d*)d(\d*)\s*(kl(\d*))?(kh(\d*))?')
+TIGHT_REGEX = re.compile(r'((\d*)x)?\s*(\d*)d(\d+)\s*(kl(\d*))?(kh(\d*))?')
 
 def d20(advantage = 0):
 	"""

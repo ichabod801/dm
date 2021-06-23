@@ -608,13 +608,14 @@ class Egor(cmd.Cmd):
 					data = creature.Creature(markdown.HeaderNode(f'# {name}'))
 					data.init_bonus = init
 				# Create an roll initiative for the bad guys.
+				average_hp = self.average_hp or (group and self.group_hp)
 				for bad_guy in range(count):
 					# Number the bad guys if there's more than one.
 					if count > 1:
 						sub_name = f'{name}-{bad_guy + 1}'
 					else:
 						sub_name = name
-					npc = data.copy(sub_name)
+					npc = data.copy(sub_name, average_hp)
 					if not group:
 						npc.init()
 						self.init.append(npc)
@@ -622,7 +623,7 @@ class Egor(cmd.Cmd):
 				# Handle groups
 				if group:
 					sub_name = f'{name}-group-of-{count}'
-					npc = data.copy(sub_name)
+					npc = data.copy(sub_name, average_hp = True)
 					npc.init()
 					self.init.append(npc)
 		# Sort by the initiative rolls.
@@ -1432,10 +1433,12 @@ class Egor(cmd.Cmd):
 		self.alarms = []
 		self.auto_attack = False
 		self.auto_kill = True
+		self.average_hp = False
 		self.campaign_folder = ''
 		self.changes = False
 		self.climate = 'temperate'
 		self.combatants = {}
+		self.group_hp = True
 		self.pcs = {}
 		self.encounters = {}
 		self.init = []

@@ -661,20 +661,22 @@ class Creature(object):
 		# Combine the lines.
 		return '\n'.join(lines)
 
-	def copy(self, name = ''):
+	def copy(self, name = '', average_hp = False):
 		"""
 		Create an independent copy of the creature. (Creature)
 
 		Parameters:
 		name: The name for the new creature. (str)
+		average_hp: A flag for using the average HP. (str)
 		"""
 		if not name:
 			name = self.name
 		clone = Creature(DummyNode(name, []))
 		clone.__dict__ = self.__dict__.copy()
 		clone.name = name
-		clone.hp = dice.roll(clone.hp_roll)
-		clone.hp_max = clone.hp
+		if not average_hp:
+			clone.hp = dice.roll(clone.hp_roll)
+			clone.hp_max = clone.hp
 		return clone
 
 	def heal(self, hp):

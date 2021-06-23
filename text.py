@@ -166,6 +166,15 @@ you lose track of it.
 
 You can generate random NPC names with the name command, and random NPC
 personalities with the personality command.
+
+You can generate weather for the day with the weather command, which takes a
+climate and a season as arguments. You can set the default climate and season
+for easier weather usage.
+
+The default "voice" for the Egor system is that of an obsequious servant of a
+mad scientist (or wizard). He calls you master all the time. Even though this
+is not coming from the idea of chattel slavery, I realize this may be offensive
+to some people. You can change the voice with 'set voice dry'.
 """
 
 HELP_SIGHT = """
@@ -210,6 +219,8 @@ IDEALS = ['Avoids hurting the poor', 'Beauty is truth', 'Believes they have a de
 	'The world changes and we must adapt to the changes', 'To thine own self be true', 'Values bold action', 
 	'Values creativity', 'Works for the redemption of others']
 
+NO = ('false', '0', 'no', 'f', 'n', 'nyet')
+
 STRONG_WIND = """
 WARNING: Ranged attacks and hearing perception checks are at disadvantage. Open
    flames are extinguished, fog is dispersed, natural flight is impossible. All
@@ -237,3 +248,5 @@ TRAITS = ['Absent minded', 'Always has a backup plan', 'Always helps those in tr
 	'Unshakeable optimism', 'Uses big words', 'Very empathetic', 'Very friendly', 'Very generous', 
 	'Very used to fine living', 'Wants to be the center of attention', 'Wants to know how things work', 
 	'Work hard, play hard']
+
+YES = ('true', '1', 'yes', 't', 'y', 'da')

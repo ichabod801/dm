@@ -611,17 +611,16 @@ class FractionalCycle(object):
 			start_period_day = ((previous_days / self.period_length) % 1) * self.period_length
 			start_period_day = int(round(start_period_day, 0)) + 1
 			start_day = int(round(self.cycle_length)) - (last_period_days - start_period_day)
-			# !! both wrong
+			# Get the fractional days.
 			fractional_days = self.cycle_length + overage - int(overage)
-			fractional_days = self.cycle_length # works for year 2, but not year 3
+			fractional_days = self.cycle_length
 			fractional_days = overage + start_day - 1
 		else:
 			period_list = []
 			start_day = 1
 			start_period_day = 1
-			# !! both wrong
 			fractional_days = self.period_length + overage - int(overage)
-			fractional_days = self.period_length # works for year 2, but not year 3 (no, not used in either)
+			fractional_days = self.period_length
 		# Expand the full period list.
 		period_list += [(period, cycle_count) for period in self.periods]
 		# Get the initial state.

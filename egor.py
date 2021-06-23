@@ -19,6 +19,7 @@ import dice
 import gtime
 import markdown
 import text
+import voice
 import weather
 
 class Egor(cmd.Cmd):
@@ -116,7 +117,7 @@ class Egor(cmd.Cmd):
 	def combat_text(self):
 		"""Print a summary of the current combat. (None)"""
 		if self.init_count == 0:
-			print(f'It is now Round {self.round}')
+			print(self.voice['new-round'].format(self.round))
 		print(self.init[self.init_count].combat_text())
 		print('-------------------\n')
 		by_number = list(enumerate((str(combatant) for combatant in self.init), start = 1))
@@ -156,7 +157,7 @@ class Egor(cmd.Cmd):
 		creature = self.get_creature(creature_id)
 		creature.ac_mod = int(ac_mod)
 		total_ac = creature.ac + creature.ac_mod
-		print(f"{creature.name}'s armor class is now {creature.ac} + {creature.ac_mod} = {total_ac}")
+		print(self.voice['new-ac'].format(creature.name, creature.ac, creature.ac_mod, total_ac))
 
 	def do_alarm(self, arguments):
 		"""
@@ -193,17 +194,17 @@ class Egor(cmd.Cmd):
 			for alarm_index, alarm in enumerate(self.alarms, start = 1):
 				print(f'{alarm_index}: {alarm}')
 			# Get the user's choice.
-			choice = input('\nWhich alarm would you like to kill, master (return for none)? ')
+			choice = input(self.voice['choose-alarm'])
 			if choice.strip():
 				# Kill the alarm.
 				del self.alarms[int(choice) - 1]
-				print('\nIt squeaked when I killed it, master.')
+				print(self.voice['removed-alarm'])
 		else:
 			# Get the alarm
 			try:
 				alarm = gtime.new_alarm(arguments, self.time, self.time_vars)
 			except ValueError:
-				print('I do not understand that time, master.')
+				print(self.voice['error-time'].format(arguments))
 				return
 			# Add it to the list.
 			self.alarms.append(alarm)
@@ -248,8 +249,8 @@ class Egor(cmd.Cmd):
 			total, text = attacker.attack(target, attack, advantage, bonus)
 		except ValueError:
 			# Handle attack errors.
-			print(f'{attacker.name} does not have an attack named {attack!r}')
-			print(f'{attacker.name} has the following attacks:')
+			print(self.voice['error-attack'].format(attacker.name, attack))
+			print(self.voice['list-attacks'].format(attacker.name))
 			for letter, attack in zip(creature.Creature.letters, attacker.attacks):
 				print(f'   {letter}: {attack}')
 			return
@@ -284,7 +285,7 @@ class Egor(cmd.Cmd):
 		else:
 			rounds = -1
 		target.conditions[condition] = rounds
-		print(f'{target.name} now has the condition {condition}.')
+		print(self.voice['confirm-condition'].format(target.name, condition))
 
 	def do_date(self, arguments):
 		"""
@@ -299,11 +300,11 @@ class Egor(cmd.Cmd):
 			format_name = 'default'
 		# Check for bad formats or no calendar.
 		if self.campaign is None:
-			print('There is no campaign loaded.')
+			print(self.voice['error-no-campaign'])
 		elif self.campaign.calendar is None:
-			print('The current campaign has no calendar.')
+			print(self.voice['error-no-calendar'])
 		elif format_name not in self.campaign.calendar.formats:
-			print('The current campaign calendar has no format named {!r}.'.format(arguments))
+			print(self.voice['error-date-format'].format(arguments))
 		else:
 			# Print the date.
 			print(self.campaign.calendar.date(self.time.day, format_name))
@@ -352,24 +353,24 @@ class Egor(cmd.Cmd):
 		# Get the name of the encounter.
 		name = arguments.strip()
 		if not name:
-			print('You must provide an encounter name.')
+			print(self.voice['error-enc-name'])
 			return
 		self.encounters[name] = []
 		while True:
 			# Get the monster.
-			bad_guy = input('Bad guy name: ').strip()
+			bad_guy = input(self.voice['choose-bad-guy']).strip()
 			if not bad_guy:
 				break
 			#bad_guy = bad_guy.replace(' ', '-')
 			if bad_guy not in self.zoo:
-				print('Only creatures in the SRD or the campaign files can be used in encounters.')
+				print(self.voice['error-creature-enc'])
 				continue
 			# Get the number of monsters.
 			# !! needs groups, do with one in the init, no number, all in combatants.
-			count = input('Number of bad guys: ')
+			count = input(self.voice['choose-bad-count'])
 			if count.strip():
 				if not (count.isdigit() or dice.DICE_REGEX.match(count)):
-					print('Invalid count, please enter that creature again.')
+					print(self.voice['error-bad-count'])
 					continue
 			else:
 				count = 1
@@ -378,7 +379,7 @@ class Egor(cmd.Cmd):
 
 	def do_git(self, arguments):
 		"""Egor doesn't understand git."""
-		print('You need to quit out of Egor to commit anything, dipshit.')
+		print(self.voice['error-git'])
 
 	def do_help(self, arguments):
 		"""
@@ -408,7 +409,7 @@ class Egor(cmd.Cmd):
 			name_lines = textwrap.wrap(', '.join(names), width = 79)
 			if name_lines:
 				print()
-				print("Additional help topics available with 'help <topic>':")
+				print(self.voice['more-help'])
 				print('\n'.join(name_lines))
 		# help_foo methods take priority over do_foo docstrings.
 		elif hasattr(self, 'help_' + topic):
@@ -423,7 +424,7 @@ class Egor(cmd.Cmd):
 			print(help_text)
 		# Display default text for unknown arguments.
 		else:
-			print("I can't help you with that.")
+			print(self.voice['error-help'])
 
 	def do_heal(self, arguments):
 		"""
@@ -436,9 +437,9 @@ class Egor(cmd.Cmd):
 		target = self.get_creature(target_id)
 		target.heal(int(healing))
 		if target.hp_temp:
-			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
+			print(self.voice['confirm-hp-temp'].format(target.name, target.hp, target.hp_temp))
 		else:
-			print(f'{target.name} now has {target.hp} HP.')
+			print(self.voice['confirm-hp'].format(target.name, target.hp))
 
 	def do_hit(self, arguments):
 		"""
@@ -453,9 +454,9 @@ class Egor(cmd.Cmd):
 		# Apply the damage.
 		target.hit(int(damage))
 		if target.hp_temp:
-			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
+			print(self.voice['confirm-hp-temp'].format(target.name, target.hp, target.hp_temp))
 		else:
-			print(f'{target.name} now has {target.hp} HP.')
+			print(self.voice['confirm-hp'].format(target.name, target.hp))
 		# Check for automatic kills.
 		if target.hp == 0 and self.auto_kill and not target.pc:
 			self.do_kill(target.name, quiet = True)
@@ -478,9 +479,9 @@ class Egor(cmd.Cmd):
 			target.hp = min(int(words[1]), target.hp_max)
 		# Notify the user of the new state.
 		if target.hp_temp:
-			print(f'{target.name} now has {target.hp} HP and {target.hp_temp} temporary HP.')
+			print(self.voice['confirm-hp-temp'].format(target.name, target.hp, target.hp_temp))
 		else:
-			print(f'{target.name} now has {target.hp} HP.')
+			print(self.voice['confirm-hp'].format(target.name, target.hp))
 
 	def do_initiative(self, arguments):
 		"""
@@ -515,18 +516,18 @@ class Egor(cmd.Cmd):
 		self.auto_attack = not add and 'auto' in arg_words
 		# Check for the encounter (if it's random the DM will want to know who it is first)
 		if encounter:
-			enc_name = input('Encounter name: ')
+			enc_name = input(self.voice['choose-encounter'])
 			if enc_name[0] == '$':
 				enc_re = re.compile(enc_name[1:])
 				possible = [name for name in self.encounters if enc_re.match(name)]
 				if possible:
 					enc_name = random.choice(possible)
 				else:
-					print('There is no encounter matching that expression.')
+					print(self.voice['error-enc-regex'])
 					return
 			else:
 				enc_name = enc_name.strip().lower()
-			print('\nThe encounter has:')
+			print(self.voice['confirm-encounter'])
 			encounter = []
 			for name, roll in self.encounters[enc_name]:
 				count = dice.roll(roll)
@@ -542,7 +543,7 @@ class Egor(cmd.Cmd):
 			self.round = 1
 			# Get initiative for the PCs.
 			for name, pc in self.combatants.items():
-				init = input(f'Initiative for {name.capitalize()}? ')
+				init = input(self.voice['set-init'].format(name.capitalize()))
 				# Roll initiative if none given.
 				if init.strip():
 					pc.initiative = int(init)
@@ -550,7 +551,6 @@ class Egor(cmd.Cmd):
 					pc.init()
 				self.init.append(pc)
 		# Get and add an encounter if requested.
-		# !! move to front so DM knows random encounters before asking for initiatives.
 		if encounter:
 			for name, roll in encounter:
 				data = self.zoo[name]
@@ -568,12 +568,12 @@ class Egor(cmd.Cmd):
 		else:
 			while True:
 				# Get the monster.
-				name = input('Bad guy name: ').strip()
+				name = input(self.voice['choose-bad-guy']).strip()
 				if not name:
 					break
 				name = name.replace(' ', '-')
 				# Get the number of monsters.
-				count = input('Number of bad guys: ').lower()
+				count = input(self.voice['choose-bad-count']).lower()
 				# Check for groups.
 				if 'g' in count:
 					group = True
@@ -591,7 +591,7 @@ class Egor(cmd.Cmd):
 				else:
 					# Ask for the initiative bonus if you can't find it.
 					# !! need a way out of this for mistakes.
-					init = int(input('Bad guy initiative bonus: '))
+					init = int(input(self.voice['set-init-bonus'].format(name)))
 					data = creature.Creature(markdown.HeaderNode(f'# {name}'))
 					data.init_bonus = init
 				# Create an roll initiative for the bad guys.
@@ -637,7 +637,7 @@ class Egor(cmd.Cmd):
 				break
 		else:
 			# Print a warning if you can't find the creature.
-			print(f'No creature named {arguments!r} was found.')
+			print(self.voice['error-creature'].format(arguments))
 			return
 		# Remove the creature.
 		del self.init[death_index]
@@ -645,7 +645,7 @@ class Egor(cmd.Cmd):
 			self.init_count -= 1
 		# Show the current status.
 		if quiet:
-			print(f'{creature.name} has been removed from the initiative order.')
+			print(self.voice['confirm-kill'].format(creature.name))
 		else:
 			self.combat_text()
 
@@ -664,9 +664,9 @@ class Egor(cmd.Cmd):
 		except KeyError:
 			# Catch any errors, and clarify which part is the error.
 			if culture in self.campaign.names:
-				print(f'The {culture} culture does not have {gender} gender or name type.')
+				print(self.voice['error-gender'].format(culture, gender))
 			else:
-				print(f'I do not know of the {culture} culture.')
+				print(self.voice['error-culture'].format(culture))
 
 	def do_next(self, arguments):
 		"""
@@ -693,7 +693,7 @@ class Egor(cmd.Cmd):
 		"""
 		self.new_note(arguments)
 		self.changes = True
-		print('Your note has been added to the scroll, master.')
+		print(self.voice['confirm-note'])
 
 	def do_npc(self, arguments):
 		"""
@@ -742,13 +742,13 @@ class Egor(cmd.Cmd):
 			print('\n'.join(random.choices(all_traits, k = int(arguments))))
 		# Handle unknown NPC traits.
 		else:
-			print('I have not heard of such a personality type, master.')
+			print(self.voice['error-personality'])
 
 	def do_quit(self, arguments):
 		"""Say goodbye to Egor."""
 		if self.changes:
-			choice = input('But, master! The game state has changed! Shall I save it? ')
-			if choice.lower() in ('yes', 'y', 'da'):
+			choice = input(self.voice['query-save'])
+			if choice.lower() in text.YES:
 				self.do_store('')
 		return True
 
@@ -774,7 +774,7 @@ class Egor(cmd.Cmd):
 		try:
 			print(dice.roll(arguments))
 		except AttributeError:
-			print("I don't know how to roll that, master.")
+			print(self.voice['error-roll'])
 
 	def do_save(self, arguments):
 		"""
@@ -800,9 +800,9 @@ class Egor(cmd.Cmd):
 		roll, success = target.save(ability[:3], int(dc), advantage)
 		# Report the results.
 		if success:
-			print(f'{target.name} made the save with a {roll}.')
+			print(self.voice['success-save'].format(target.name, roll))
 		else:
-			print(f'{target.name} failed the save with a {roll}.')
+			print(self.voice['failure-save'].format(target.name, roll))
 
 	def do_set(self, arguments):
 		"""
@@ -826,52 +826,61 @@ class Egor(cmd.Cmd):
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
 		if option == 'auto-kill':
-			if setting.strip() in ('true', '1', 'yes', 't', 'y'):
+			if setting.strip() in text.YES:
 				self.auto_kill = True
-				print('Auto-kill is on.')
-			elif setting.strip() in ('false', '0', 'no', 'f', 'n'):
+				print(self.voice['confirm-ak-on'])
+			elif setting.strip() in text.NO:
 				self.auto_kill = False
-				print('Auto-kill is off.')
+				print(self.voice['confirm-ak-off'])
 			else:
-				print('Invalid setting for auto-kill.')
+				print(self.voice['error-auto-kill'])
 				return
 			self.changes = True
 		elif option == 'campaign':
 			self.campaign_folder = setting
 			self.load_campaign()
-			print(f'The campaign at {self.campaign_folder} has been loaded.')
+			print(self.voice['confirm-campaign'].format(self.campaign_folder))
 			self.changes = True
 		elif option == 'climate':
 			if setting.lower() in weather.WEATHER_DATA:
 				self.climate = setting.lower()
-				print(f'The climate has been set to {self.climate}.')
+				print(self.voice['confirm-climate'])
 				self.changes = True
 			else:
-				print(f'I do not recognize the climate {setting!r}.')
+				print(self.voice['error-climate'].format(setting))
 		elif option == 'season':
 			if setting.lower() in ('spring', 'summer', 'winter', 'fall'):
 				self.season = setting.lower()
-				print(f'The season has been set to {self.season}.')
+				print(self.voice['confirm-season'].format(self.season))
 				self.changes = True
 			else:
-				print(f'I do not recognize the season {setting!r}.')
+				print(self.voice['error-season'].format(setting))
 		elif option == 'time-var':
 			variable, value = setting.split()
 			variable = variable.lower()
 			self.time_vars[variable] = value
-			print(f'The time variable {variable} was set to {value}.')
+			print(self.voice['confirm-time-var'].format(variable, value))
 			self.changes = True
+		elif option == 'voice':
+			try:
+				self.voice = getattr(voice, setting.upper())
+			except AttributeError:
+				print(self.voice['error-voice'].format(setting))
+			else:
+				print(self.voice['confirm-voice'])
+				self.prompt = self.voice['prompt']
+				self.changes = True
 		elif option == 'weather-roll':
 			try:
 				dice.roll(setting)
 			except:
-				print(f'{setting!r} is not a valid die roll.')
+				print(self.voice['error-roll'])
 			else:
 				self.weather_roll = setting.lower()
-				print(f'The weather roll has been set to {self.weather_roll}.')
+				print(self.voice['confirm-weather'].format(self.weather_roll))
 				self.changes = True
 		else:
-			print(f'I do not recognize the option {option!r}, master.')
+			print(self.voice['error-option'].format(option))
 
 	def do_shell(self, arguments):
 		"""Handle raw Python code. (!)"""
@@ -933,7 +942,7 @@ class Egor(cmd.Cmd):
 			skills.sort()
 			for skill_index, skill in enumerate(skills, start = 1):
 				print(f'{skill_index}: {skill}')
-			choice = input('Which skill is the check for? ')
+			choice = input(self.voice['choose-skill'])
 			skill = skills[int(choice)]
 			print()
 		# Make the skill check.
@@ -941,9 +950,9 @@ class Egor(cmd.Cmd):
 			roll, check = target.skill_check(skill, advantage, ability)
 			if passive:
 				passive_check = 10 + target.skills[skill] + 5 * advantage
-				print(f'{target.name} rolled a {roll} for a total of {check} (passive = {passive_check}).')
+				print(self.voice['confirm-passive'].format(target.name, roll, check, passive_check))
 			else:
-				print(f'{target.name} rolled a {roll} for a total of {check}.')
+				print(self.voice['confirm-skill'].format(target.name, roll, check))
 
 	def do_srd(self, arguments):
 		"""
@@ -1004,9 +1013,10 @@ class Egor(cmd.Cmd):
 			# Save the weather data.
 			data_file.write('climate: {}\n'.format(self.climate))
 			data_file.write('season: {}\n'.format(self.season))
+			data_file.write('voice: {}\n'.format(self.voice['__name__']))
 			data_file.write('weather-roll: {}\n'.format(self.weather_roll))
 		self.changes = False
-		print('I have stored all of the incantations, master.')
+		print(self.voice['confirm-store'])
 
 	def do_study(self, arguments):
 		"""
@@ -1033,7 +1043,7 @@ class Egor(cmd.Cmd):
 				for note_index in self.tags[arguments]:
 					print(self.notes[note_index])
 			else:
-				print(f'I do not know the tag {arguments!r}, master.')
+				print(self.voice['error-tag'].format(arguments))
 
 	def do_table(self, arguments):
 		"""
@@ -1060,12 +1070,12 @@ class Egor(cmd.Cmd):
 			elif names:
 				for name_index, name in enumerate(names, start = 1):
 					print(f'{name_index}: {name.title()}')
-				choice = input('\nWhich table would you like to roll on? ')
+				choice = input(self.voice['choose-table'])
 				table = names[int(choice) - 1]
 				print()
 			# Warning the user if there were no results.
 			else:
-				print('No matching tables were found.')
+				print(self.voice['error-table-regex'])
 				return
 			# Print the result.
 			print(self.tables[table].roll())
@@ -1076,8 +1086,8 @@ class Egor(cmd.Cmd):
 			print('\n'.join(names))
 		# Handle unknown tables.
 		else:
-			print(f'I do not know the table {arguments!r}.')
-			print("You can list all known tables with 'table list'.")
+			print(self.voice['error-table'])
+			print(self.voice['more-tables'])
 
 	def do_test(self, arguments):
 		"""
@@ -1129,7 +1139,7 @@ class Egor(cmd.Cmd):
 			try:
 				time = gtime.Time.from_str(self.time_vars.get(time_spec, time_spec))
 			except ValueError:
-				print('I do not understand that time, master.')
+				print(self.voice['error-time'].format(time_spec))
 				return
 			# Add or set as requested.
 			last_year = self.time.year
@@ -1159,9 +1169,9 @@ class Egor(cmd.Cmd):
 		condition = words[1].lower()
 		if condition in target.conditions:
 			del target.conditions[condition]
-			print(f'{target.name} no longer has the condition {condition}.')
+			print(self.voice['confirm-uncondition'].format(target.name, condition))
 		else:
-			print(f'{target.name} did not have the condition {condition} to remove.')
+			print(self.voice['error-uncondition'].format(target.name, condition))
 
 	def do_weather(self, arguments):
 		"""
@@ -1192,9 +1202,9 @@ class Egor(cmd.Cmd):
 			print(weather.precipitation(climate, season, temp_low, temp_high))
 		except KeyError:
 			if season in ('spring', 'summer', 'fall', 'winter'):
-				print('I do not recognize that climate.')
+				print(self.voice['error-culture'].format(climate))
 			else:
-				print('I do not recognize that season.')
+				print(self.voice['error-season'].format(season))
 
 	def get_creature(self, creature, context = 'open'):
 		"""
@@ -1211,7 +1221,7 @@ class Egor(cmd.Cmd):
 			try:
 				creature = self.init[int(creature) - 1]
 			except ValueError:
-				raise ValueError('Creature index out of range')
+				raise ValueError(self.voice['error-creature-ndx'])
 		# Check non-combat containers outside of combat.
 		elif context == 'open' and creature.lower() in self.pcs:
 			creature = self.pcs[creature.lower()]
@@ -1219,7 +1229,7 @@ class Egor(cmd.Cmd):
 			creature = self.zoo[creature.lower()]
 		# Warn on not finding the creature.
 		else:
-			raise ValueError(f'No creature named {creature!r} was found.')
+			raise ValueError(self.voice['error-creature'])
 		# Handle ids within groups.
 		if 'group-of' in creature.name:
 			count = creature.name.split('-')[-1]
@@ -1269,6 +1279,9 @@ class Egor(cmd.Cmd):
 				elif tag == 'time-var':
 					var, value = data.split()
 					self.time_vars[var] = value
+				elif tag == 'voice':
+					self.voice = getattr(voice, data.strip().upper())
+					self.prompt = self.voice['prompt']
 				elif tag == 'weather-roll':
 					self.weather_roll = data.strip()
 
@@ -1296,20 +1309,20 @@ class Egor(cmd.Cmd):
 			else:
 				for match_index, match in enumerate(matches, start = 1):
 					print(f'{match_index}: {match.full_header()}')
-				choice = input('\nWhich section would you like to view (return for none)? ')
+				choice = input(self.voice['choose-section'])
 			# Validate the choice.
 			if choice:
 				try:
 					match = matches[int(choice) - 1]
 				except (ValueError, IndexError):
-					print('\nInvalid choice.')
+					print(self.voice['error-choice'])
 				else:
 					# Print the chosen section.
 					print()
 					print(match.full_text())
 		else:
 			# Warn the user if there are no matches.
-			print('No matches found.')
+			print(self.voice['error-match'])
 
 	def new_note(self, note_text):
 		"""
@@ -1379,11 +1392,12 @@ class Egor(cmd.Cmd):
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()
 		self.tags = collections.defaultdict(list)
+		self.voice = voice.EGOR
 		self.weather_roll = '1d4*10'
 		# Load any saved state.
 		try:
 			self.load_data()
-			print('The game state has been restored, master.')
+			print(self.voice['confirm-load'])
 		except FileNotFoundError:
 			pass
 		if self.campaign_folder:

@@ -1206,16 +1206,20 @@ class Egor(cmd.Cmd):
 			else:
 				print(self.voice['error-season'].format(season))
 
-	def get_creature(self, creature, context = 'open'):
+	def get_creature(self, creature_text, context = 'open'):
 		"""
 		Get a creature to apply a command to. (Creature)
 
+		If context is not 'open', only the current combatants are searched, by name or
+		number.
+
 		Parameters:
-		creature: The identifier of the creature. (str)
-		scope: How narrow/broad the search should be. (str)
+		creature_text: The identifier of the creature. (str)
+		context: How narrow/broad the search should be. (str)
 		"""
+		creature = creature_text.strip().lower().replace(' ', '-')
 		# Check the combat containers
-		if creature.lower() in self.combatants:
+		if creature in self.combatants:
 			creature = self.combatants[creature.lower()]
 		elif creature.isdigit():
 			try:
@@ -1223,17 +1227,18 @@ class Egor(cmd.Cmd):
 			except ValueError:
 				raise ValueError(self.voice['error-creature-ndx'])
 		# Check non-combat containers outside of combat.
-		elif context == 'open' and creature.lower() in self.pcs:
+		elif context == 'open' and creature in self.pcs:
 			creature = self.pcs[creature.lower()]
-		elif context == 'open' and creature.lower() in self.zoo:
+		elif context == 'open' and creature in self.zoo:
 			creature = self.zoo[creature.lower()]
 		# Warn on not finding the creature.
 		else:
-			raise ValueError(self.voice['error-creature'])
+			raise ValueError(self.voice['error-creature'].format(creature_text))
 		# Handle ids within groups.
 		if 'group-of' in creature.name:
 			count = creature.name.split('-')[-1]
 			name = creature.name[:creature.name.index('-group')]
+			which = input(self.voice['query-creature'].format(name, count))
 			which = input(f'Which {name} (1-{count})? ')
 			creature = self.get_creature(f'{name}-{which}')
 		return creature

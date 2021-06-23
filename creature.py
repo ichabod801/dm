@@ -127,12 +127,17 @@ class Attack(object):
 		# Make the attack roll.
 		hit_roll = dice.d20(advantage)
 		total_bonus = self.bonus + temp_bonus
+		# Determine the target AC.
+		if target is None:
+			target_ac = 1
+		else:
+			target_ac = target.ac + target.ac_mod
 		# Handle fumbles.
 		if hit_roll == 1:
 			total = 0
 			text = 'Fumble'
 		# Handle hits.
-		elif hit_roll == 20 or hit_roll + total_bonus >= target.ac + target.ac_mod:
+		elif hit_roll == 20 or hit_roll + total_bonus >= target_ac:
 			# Get the damage.
 			text_bits = []
 			total = 0
@@ -146,10 +151,14 @@ class Attack(object):
 					total = sub_total
 				else:
 					total += sub_total
-			target.hp = max(0, target.hp - total)
-			print(f'{target.name.capitalize()} has {target.hp} hit points left.')
+			if target is not None:
+				target.hp = max(0, target.hp - total)
+				print(f'{target.name.capitalize()} has {target.hp} hit points left.')
 			# Create the text description.
-			hit_type = 'Critical hit' if hit_roll == 20 else f'Hit ({hit_roll} + {total_bonus})'
+			if target is None:
+				hit_type = 'Critical hit' if hit_roll == 20 else f'Hits AC {hit_roll + total_bonus}'
+			else:
+				hit_type = 'Critical hit' if hit_roll == 20 else f'Hit ({hit_roll} + {total_bonus})'
 			if len(text_bits) == 1:
 				text = f'{hit_type} for {text_bits[0]}'
 			else:
@@ -585,9 +594,17 @@ class Creature(object):
 			self.speed = int(text.split()[0])
 			self.other_speeds = ''
 
+	def auto_attack(self):
+		"""Do all attacks without a target. (str)"""
+		results = []
+		for attack in self.attacks.values():
+			damage, text = attack.attack(None)
+			results.append(f'**{attack.name}**: {text}')
+		return '\n'.join(results)
+
 	def attack(self, target, name, advantage = 0, temp_bonus = 0):
 		"""
-		Attack something. (tuple of int, text)
+		Attack something. (tuple of int, str)
 
 		Parameters:
 		target: The creature to attack. (Creature)

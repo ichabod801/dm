@@ -154,7 +154,7 @@ creatures and player characters loaded from the SRD and your campaign files.
 The next command can be used to advance the initiative count. The kill command
 removes creatures from the initiative count. The heal, hit, and hp commands
 can be use to manage the hit points of creatures. The attack command handles
-an attack from the current creature on another creature.
+an attack from the current creature on another creature. 
 
 The encounter command can be used to set up combats ahead of time. There are
 ways you can use this for random encounters.
@@ -163,6 +163,13 @@ During combat you are shown an abbreviated stat block for the currently acting
 creature. You can get the full stat block for that (or any other) creature 
 using the stats command. The show command prints the initiative order again if 
 you lose track of it.
+
+For large combats you can set creatures as groups. Instead of saying you want
+5 zombies, say you want 5g zombies. You will get one group of zombies in the
+initiative, but you can still reference them as zombie-1, zombie-2, and so on
+for damage. Also The auto-attack setting can be used to generate all attacks 
+automatically, as a time saver. There is an autoattack (@@) command to repeat
+this as necessary.
 
 You can generate random NPC names with the name command, and random NPC
 personalities with the personality command.

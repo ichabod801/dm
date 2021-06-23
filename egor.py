@@ -94,8 +94,9 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'@': 'attack', '&': 'note', 'camp': 'campaign', 'con': 'condition', 'init': 'initiative', 
-		'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
+	aliases = {'@': 'attack', '@@': 'autoattack', '&': 'note', 'auto': 'autoattack', 'camp': 'campaign', 
+		'con': 'condition', 'init': 'initiative', 'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time', 
+		'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {'conditions': text.HELP_CONDITIONS, 'cover': text.HELP_SIGHT, 'help': text.HELP_GENERAL, 
 		'sight': text.HELP_SIGHT}
@@ -119,6 +120,9 @@ class Egor(cmd.Cmd):
 		if self.init_count == 0:
 			print(self.voice['new-round'].format(self.round))
 		print(self.init[self.init_count].combat_text())
+		if self.auto_attack and not self.init[self.init_count].pc:
+			print('-------------------')
+			print(self.init[self.init_count].auto_attack())
 		print('-------------------\n')
 		by_number = list(enumerate((str(combatant) for combatant in self.init), start = 1))
 		for index, combatant in by_number[(self.init_count + 1):] + by_number[:self.init_count]:
@@ -255,6 +259,13 @@ class Egor(cmd.Cmd):
 				print(f'   {letter}: {attack}')
 			return
 		print(text)
+
+	def do_autoattack(self, arguments):
+		"""
+		Run all of the current combatants attacks with no target. (auto, @@)
+		"""
+		attacker = self.init[self.init_count]
+		print(attacker.auto_attack())
 
 	def do_campaign(self, arguments):
 		"""
@@ -513,7 +524,6 @@ class Egor(cmd.Cmd):
 		arg_words = arguments.split()
 		add = '+' in arg_words or 'add' in arg_words
 		encounter = '&' in arg_words or 'encounter' in arg_words
-		self.auto_attack = not add and 'auto' in arg_words
 		# Check for the encounter (if it's random the DM will want to know who it is first)
 		if encounter:
 			enc_name = input(self.voice['choose-encounter'])
@@ -810,6 +820,8 @@ class Egor(cmd.Cmd):
 
 		The options you can set include:
 		
+		* auto-attack: If set to true/1/yes, Egor automatically makes all of each
+			combatant's attacks when it is their turn in initiative.
 		* auto-kill: If set to true/1/yes, Egor automatically removes non-pc
 			creatures from the initiative order when they hit 0 hp. If set to
 			false/0/no, you must manually remove them with the kill command.
@@ -821,11 +833,23 @@ class Egor(cmd.Cmd):
 			time-var with a time variable name and a time specification, such as
 			'set time-var short-rest 5'. Setting a time variable to another time
 			variable does not work.
+		* voice: Changes the phrases used by the system. Can be 'dry' or 'egor'.
 		* weather-roll: Sets the roll for how extreme high and low temperatures are.
 		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
-		if option == 'auto-kill':
+		if option == 'auto-attack':
+			if setting.strip() in text.YES:
+				self.auto_attack = True
+				print(self.voice['confirm-aa-on'])
+			elif setting.strip() in text.NO:
+				self.auto_attack = False
+				print(self.voice['confirm-aa-off'])
+			else:
+				print(self.voice['error-auto-attack'])
+				return
+			self.changes = True
+		elif option == 'auto-kill':
 			if setting.strip() in text.YES:
 				self.auto_kill = True
 				print(self.voice['confirm-ak-on'])
@@ -986,6 +1010,8 @@ class Egor(cmd.Cmd):
 			# Save the alarms.
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
+			# Save the auto-attack setting.
+			data_file.write('auto-attack: {}\n'.format(self.auto_attack))
 			# Save the auto-kill setting.
 			data_file.write('auto-kill: {}\n'.format(self.auto_kill))
 			# Save the notes with tags (allows deleting notes w/o messing up tags).
@@ -1013,8 +1039,9 @@ class Egor(cmd.Cmd):
 			# Save the weather data.
 			data_file.write('climate: {}\n'.format(self.climate))
 			data_file.write('season: {}\n'.format(self.season))
-			data_file.write('voice: {}\n'.format(self.voice['__name__']))
 			data_file.write('weather-roll: {}\n'.format(self.weather_roll))
+			# Save the system voice.
+			data_file.write('voice: {}\n'.format(self.voice['__name__']))
 		self.changes = False
 		print(self.voice['confirm-store'])
 
@@ -1261,6 +1288,8 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
+				elif tag == 'auto-attack':
+					self.auto_attack = data.strip() == 'True'
 				elif tag == 'auto-kill':
 					self.auto_kill = data.strip() == 'True'
 				elif tag == 'campaign':
@@ -1384,6 +1413,7 @@ class Egor(cmd.Cmd):
 		self.zoo = self.srd.zoo.copy()
 		# Set the default state.
 		self.alarms = []
+		self.auto_attack = False
 		self.auto_kill = True
 		self.campaign_folder = ''
 		self.changes = False

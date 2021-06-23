@@ -52,6 +52,8 @@ class Egor(cmd.Cmd):
 	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
 	do_ac: Set the armor class modifier for a creature. (None)
+	do_attack: Have the current combatant attack another one. (None)
+	do_autoattack: Run all of the current combatants attacks with no target. (None)
 	do_campaign: Search the campaign documents. (None)
 	do_condition: Add a condition to a creature. (None)
 	do_date: Give the date as specified by the campaign calendar. (None)
@@ -67,6 +69,7 @@ class Egor(cmd.Cmd):
 	do_npc: Creates a full random NPC. (None)
 	do_personality: Generate a random personality. (None)
 	do_quit: Exit the Egor interface. (True)
+	do_repeat: Repeat a command multiple times. (None)
 	do_roll: Roll some dice. (None)
 	do_save: Have a creature make a saving throw. (None)
 	do_set: Set one of the options. (None)
@@ -94,9 +97,9 @@ class Egor(cmd.Cmd):
 	preloop
 	"""
 
-	aliases = {'@': 'attack', '@@': 'autoattack', '&': 'note', 'auto': 'autoattack', 'camp': 'campaign', 
-		'con': 'condition', 'init': 'initiative', 'n': 'next', 'q': 'quit', 'r': 'roll', 't': 'time', 
-		'uncon': 'uncondition'}
+	aliases = {'@': 'attack', '@@': 'autoattack', '&': 'note', '*': 'repeat', 'auto': 'autoattack', 
+		'camp': 'campaign', 'con': 'condition', 'init': 'initiative', 'n': 'next', 'q': 'quit', 
+		'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {'conditions': text.HELP_CONDITIONS, 'cover': text.HELP_SIGHT, 'help': text.HELP_GENERAL, 
 		'sight': text.HELP_SIGHT}
@@ -761,6 +764,20 @@ class Egor(cmd.Cmd):
 			if choice.lower() in text.YES:
 				self.do_store('')
 		return True
+
+	def do_repeat(self, arguments):
+		"""
+		Repeat a command multiple times. (*)
+
+		The arguments to the repeat command are a number and another command 
+		(complete with the arguments for that command). The command specified in
+		the second argument is repeated a number of times equal to the first
+		argument. So 'repeat 3 attack Fred shortsword' does three attacks on Fred
+		from the current combatant with their shortsword.
+		"""
+		count, command = arguments.split(None, 1)
+		for repeat in range(int(count)):
+			self.onecmd(command)
 
 	def do_roll(self, arguments):
 		"""

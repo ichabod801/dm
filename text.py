@@ -142,12 +142,16 @@ increments. You can also set alarms in game time to alert you of events that
 should happen, using the alarm command.
 
 You can store notes about the game with the note command, and later review them
-with the study command. You can also search the Source Resource Document with
-the srd command. You can add your own campaign files in markdown format, and
-they can be loaded by using the set command. Once loaded, your campaign files
-can be searched with the campaign command. You can define name formats in the
-Names chapter of your campaign documents, and then use the name command to
-generate random NPC names for different cultures and genders.
+with the study command. Notes can be tagged to assist later searches (see 'help
+note'). You can set automatic tags for every note with the autotag command.
+
+You can also search the Source Resource Document with the srd command. You can 
+add your own campaign files in markdown format, and they can be loaded by using 
+the set command. Once loaded, your campaign files can be searched with the 
+campaign command. You can define name formats in the Names chapter of your 
+campaign documents, and then use the name command to generate random NPC names 
+for different cultures and genders. You can provide full PC stats in the Player
+Characters chapter of your campaign documents, to be loaded and used in combat.
 
 The initiative command will allow you to set up an order for combat, using 
 creatures and player characters loaded from the SRD and your campaign files.

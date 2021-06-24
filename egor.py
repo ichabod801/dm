@@ -273,6 +273,17 @@ class Egor(cmd.Cmd):
 		attacker = self.init[self.init_count]
 		print(attacker.auto_attack())
 
+	def do_autotag(self, arguments):
+		"""
+		Create automatic tags for every note.
+
+		The arguments become tags added to every note. To turn autotags off, just 
+		use autotag with no arguments. Setting autotags replaces any previous 
+		autotags. Note that autotags are not saved when you quit from the Egor 
+		system.
+		"""
+		self.auto_tag = arguments.strip()
+
 	def do_campaign(self, arguments):
 		"""
 		Search the campaign documents. (camp)
@@ -718,6 +729,11 @@ class Egor(cmd.Cmd):
 		that isn't a letter, number, or dash (-). Tags can be used to search for 
 		notes with the study command.
 		"""
+		if self.auto_tag:
+			if '|' in arguments:
+				arguments = f'{arguments} {self.auto_tag}'
+			else:
+				arguments = f'{arguments} | {self.auto_tag}'
 		self.new_note(arguments)
 		self.changes = True
 		print(self.voice['confirm-note'])
@@ -1451,6 +1467,7 @@ class Egor(cmd.Cmd):
 		self.alarms = []
 		self.auto_attack = False
 		self.auto_kill = True
+		self.auto_tag = ''
 		self.average_hp = False
 		self.campaign_folder = ''
 		self.changes = False

@@ -263,8 +263,11 @@ class Egor(cmd.Cmd):
 			print(self.voice['list-attacks'].format(attacker.name))
 			for letter, attack in zip(creature.Creature.letters, attacker.attacks):
 				print(f'   {letter}: {attack}')
-			return
-		print(text)
+		else:
+			# Check for automatic kills.
+			if target.hp == 0 and self.auto_kill and not target.pc:
+				self.do_kill(target.name, quiet = True)
+			print(text)
 
 	def do_autoattack(self, arguments):
 		"""

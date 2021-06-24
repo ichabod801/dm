@@ -44,6 +44,7 @@ class Egor(cmd.Cmd):
 	Class Attributes:
 	aliases: Different names for commands. (dict of str: str)
 	help_text: Additional help text. (dict of str: str)
+	on_off_options: The options that are flags. (list of str)
 	tag_regex: A regular expression for note tags. (Pattern)
 	time_vars: Variables for game time and alarms. (dict of str: str)
 
@@ -103,6 +104,8 @@ class Egor(cmd.Cmd):
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {'conditions': text.HELP_CONDITIONS, 'cover': text.HELP_SIGHT, 'help': text.HELP_GENERAL, 
 		'sight': text.HELP_SIGHT}
+	on_off_options = ('auto-attack', 'auto-kill', 'average-hp', 'dex-tiebreak', 'group-hp', 
+		'random-tiebreak')
 	prompt = 'Yes, master? '
 	tag_regex = re.compile(r'[a-zA-Z0-9\-]+')
 	time_vars = {'combat': '10', 'long-rest': '8:00', 'room': '10', 'short-rest': '60'}
@@ -521,6 +524,16 @@ class Egor(cmd.Cmd):
 		the initiative as 'wight-group-of-5'. You can still get the individuals bad
 		guys with 'wight-1' or 'wight-3'. If you try to target that group using their
 		initiative order, you will be asked which particular one you want to hit.
+
+		Note that by default, all creatures in a group have the same hit points, equal
+		to the average hit points for that monster. Creatures not in a group each roll
+		individual hit points. These hit point rolls/non-rolls can be changed by
+		setting the average-hp and group-hp options with the set command.
+
+		The default setting is to break initiative ties by dexterity score. This can
+		be turned off with the dex-tiebreak option, and random tiebreaks (the 
+		equivalent of rolling off with d20s) can be done with the random-tiebreak
+		option.
 		"""
 		# !! refactor for size
 		# Parse the arguments.
@@ -607,7 +620,7 @@ class Egor(cmd.Cmd):
 					init = int(input(self.voice['set-init-bonus'].format(name)))
 					data = creature.Creature(markdown.HeaderNode(f'# {name}'))
 					data.init_bonus = init
-				# Create an roll initiative for the bad guys.
+				# Create and roll initiative for the bad guys.
 				average_hp = self.average_hp or (group and self.group_hp)
 				for bad_guy in range(count):
 					# Number the bad guys if there's more than one.
@@ -630,10 +643,10 @@ class Egor(cmd.Cmd):
 		if add:
 			# Save the current point in combat, if adding to the combat.
 			current = self.init[self.init_count]
-			self.init.sort(key = lambda c: (c.initiative, c.bonuses['dex']), reverse = True)
+			self.init.sort(key = self.init_sorter, reverse = True)
 			self.init_count = self.init.index(current)
 		else:
-			self.init.sort(key = lambda c: (c.initiative, c.bonuses['dex']), reverse = True)
+			self.init.sort(key = self.init_sorter, reverse = True)
 		# Inform the DM of the initiative start.
 		print()
 		self.combat_text()
@@ -843,9 +856,13 @@ class Egor(cmd.Cmd):
 		* auto-kill: If set to true/1/yes, Egor automatically removes non-pc
 			creatures from the initiative order when they hit 0 hp. If set to
 			false/0/no, you must manually remove them with the kill command.
+		* average-hp: Assigns the average hit points to all non-PC creatures in the
+			initiative order.
 		* campaign: Sets the campaign folder and loads any markdown files from that
 			folder that start with two digits and a period (.).
 		* climate: Sets the default climate for the weather command.
+		* group-hp: Assigns the average hit points to all members of groups in the
+			initiative order.
 		* season: Sets the default season for the weather command.
 		* time-var: Changes or adds time variables (see the time command). Follow
 			time-var with a time variable name and a time specification, such as
@@ -856,26 +873,16 @@ class Egor(cmd.Cmd):
 		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
-		if option == 'auto-attack':
+		if option in self.on_off_options:
+			attr = option.replace('-', '_')
 			if setting.strip() in text.YES:
-				self.auto_attack = True
-				print(self.voice['confirm-aa-on'])
+				setattr(self, attr, True)
+				print(self.voice['confirm-on'].format(option))
 			elif setting.strip() in text.NO:
-				self.auto_attack = False
-				print(self.voice['confirm-aa-off'])
+				setattr(self, attr, False)
+				print(self.voice['confirm-off'].format(option))
 			else:
-				print(self.voice['error-auto-attack'])
-				return
-			self.changes = True
-		elif option == 'auto-kill':
-			if setting.strip() in text.YES:
-				self.auto_kill = True
-				print(self.voice['confirm-ak-on'])
-			elif setting.strip() in text.NO:
-				self.auto_kill = False
-				print(self.voice['confirm-ak-off'])
-			else:
-				print(self.voice['error-auto-kill'])
+				print(self.voice['error-on-off'].format(option))
 				return
 			self.changes = True
 		elif option == 'campaign':
@@ -1028,10 +1035,10 @@ class Egor(cmd.Cmd):
 			# Save the alarms.
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
-			# Save the auto-attack setting.
-			data_file.write('auto-attack: {}\n'.format(self.auto_attack))
-			# Save the auto-kill setting.
-			data_file.write('auto-kill: {}\n'.format(self.auto_kill))
+			# Save the on/off settings.
+			for option in self.on_off_options:
+				attr = option.replace('-', '_')
+				data_file.write('{}: {}\n'.format(option, getattr(self, attr)))
 			# Save the notes with tags (allows deleting notes w/o messing up tags).
 			save_notes = [f'note: {note}' for note in self.notes]
 			for tag, indices in self.tags.items():
@@ -1288,6 +1295,18 @@ class Egor(cmd.Cmd):
 			creature = self.get_creature(f'{name}-{which}')
 		return creature
 
+	def init_sorter(self, char):
+		"""
+		Sort function for character initiative. (tuple)
+
+		Parameters:
+		char: The character to be sorted. (Creature)
+		"""
+		init = char.initiative
+		dex = char.abilities['dex'] if self.dex_tiebreak else 0
+		rando = random.random() if self.random_tiebreak else 0
+		return (init, dex, rando)
+
 	def load_campaign(self):
 		"""Load stored campaign data. (None)"""
 		self.campaign = markdown.SRD(self.campaign_folder)
@@ -1306,10 +1325,6 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
-				elif tag == 'auto-attack':
-					self.auto_attack = data.strip() == 'True'
-				elif tag == 'auto-kill':
-					self.auto_kill = data.strip() == 'True'
 				elif tag == 'campaign':
 					self.campaign_folder = data.strip()
 				elif tag == 'climate':
@@ -1336,6 +1351,9 @@ class Egor(cmd.Cmd):
 					self.prompt = self.voice['prompt']
 				elif tag == 'weather-roll':
 					self.weather_roll = data.strip()
+				elif tag in self.on_off_options:
+					attr = tag.replace('-', '_')
+					setattr(self, attr, data.strip() == 'True')
 
 	def markdown_search(self, arguments, document):
 		"""
@@ -1438,11 +1456,13 @@ class Egor(cmd.Cmd):
 		self.changes = False
 		self.climate = 'temperate'
 		self.combatants = {}
+		self.dex_tiebreak = True
 		self.group_hp = True
 		self.pcs = {}
 		self.encounters = {}
 		self.init = []
 		self.notes = []
+		self.random_tiebreak = False
 		self.season = 'spring'
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()

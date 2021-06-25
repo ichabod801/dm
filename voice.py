@@ -36,6 +36,7 @@ DRY = {
 	'confirm-uncondition': '{} no longer has the condition {}.',
 	'confirm-voice': 'Standard voice settings restored.',
 	'confirm-weather': 'The weather roll has been set to {}.',
+	'confirm-xp': 'The current xp total is {}.',
 	'error-attack': '{} does not have an attack named {!r}.',
 	'error-bad-count': 'Invalid count, please enter that creature again.',
 	'error-choice': '\nInvalid choice.',
@@ -64,6 +65,7 @@ DRY = {
 	'error-time': 'The time string {!r} is not valid.',
 	'error-uncondition': '{} did not have the condition {} to remove.',
 	'error-voice': 'There is no voice named {!r} on file.',
+	'error-xp': "Arguments to xp must be an integer, 'award', or nothing.",
 	'failure-save': '{} failed the save with a {}.',
 	'list-attacks': '{} has the following attacks:',
 	'more-help': "Additional help topics available with 'help <topic>':",
@@ -76,7 +78,8 @@ DRY = {
 	'set-init-bonus': 'What is the initiative bonus for {}? ',
 	'success-save': '{} made the save with a {}.',
 	'query-creature': 'Which {} (1-{})? ',
-	'query-save': 'Save changes to the Egor system (y/n)? '
+	'query-save': 'Save changes to the Egor system (y/n)? ',
+	'xp-award': 'Each player receives {} experience points.'
 }
 
 EGOR = {
@@ -107,6 +110,7 @@ EGOR = {
 	'confirm-uncondition': '{} has been cured of the {} condtion, master.',
 	'confirm-voice': 'I am ready to do your bidding, master.',
 	'confirm-weather': 'The weather demons have been given the instruction {!r}, master.',
+	'confirm-xp': 'Master, the player characters have wrested {} XP from you.',
 	'error-attack': '{} does not know how to {!r}, master.',
 	'error-bad-count': 'I do not understand that count, master. Please enter that villain again.',
 	'error-choice': '\nI am sorry, master, but that is not one of the available choices.',
@@ -135,6 +139,7 @@ EGOR = {
 	'error-time': 'I do not understand the time {!r}, master.',
 	'error-uncondition': 'But {} does not have the condition {}, master.',
 	'error-voice': 'I do not know of any voice named {!r}, master.',
+	'error-xp': "I cannot add that to the xp without invoking extra-planar math, master.",
 	'failure-save': '{} failed with a {}, master.',
 	'list-attacks': 'These are the ways {} can kill you, master:',
 	'more-help': "Additional help topics available with 'help <topic>':",
@@ -147,5 +152,6 @@ EGOR = {
 	'set-init': 'Master, what initiative bonus should I use for {}? ',
 	'success-save': '{} succeeded with a {}, master.',
 	'query-creature': 'Which {}, master? There are {} of them. ',
-	'query-save': 'But, master! The game state has changed! Shall I save it? '
+	'query-save': 'But, master! The game state has changed! Shall I save it? ',
+	'xp-award': 'Each player got away with {} experience points, master.'
 }

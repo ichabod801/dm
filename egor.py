@@ -684,6 +684,9 @@ class Egor(cmd.Cmd):
 		del self.init[death_index]
 		if death_index < self.init_count:
 			self.init_count -= 1
+		# Update the experience points.
+		if self.xp_method == 'standard' and not creature.pc:
+			self.xp += creature.xp
 		# Show the current status.
 		if quiet:
 			print(self.voice['confirm-kill'].format(creature.name))
@@ -889,6 +892,8 @@ class Egor(cmd.Cmd):
 			variable does not work.
 		* voice: Changes the phrases used by the system. Can be 'dry' or 'egor'.
 		* weather-roll: Sets the roll for how extreme high and low temperatures are.
+		* xp-method: If this is set to 'standard', xp is generated from monsters
+			base on CR. Otherwise, all xp comes from the xp command.
 		"""
 		option, setting = arguments.split(None, 1)
 		option = option.lower()
@@ -947,6 +952,8 @@ class Egor(cmd.Cmd):
 				self.weather_roll = setting.lower()
 				print(self.voice['confirm-weather'].format(self.weather_roll))
 				self.changes = True
+		elif option == 'xp-method':
+			self.xp_method = setting.strip().lower()
 		else:
 			print(self.voice['error-option'].format(option))
 
@@ -1086,6 +1093,9 @@ class Egor(cmd.Cmd):
 			data_file.write('weather-roll: {}\n'.format(self.weather_roll))
 			# Save the system voice.
 			data_file.write('voice: {}\n'.format(self.voice['__name__']))
+			# Save the experience points.
+			data_file.write('xp: {}\n'.format(self.xp))
+			data_file.write('xp-method: {}\n'.format(self.xp_method))
 		self.changes = False
 		print(self.voice['confirm-store'])
 
@@ -1277,6 +1287,29 @@ class Egor(cmd.Cmd):
 			else:
 				print(self.voice['error-season'].format(season))
 
+	def do_xp(self, arguments):
+		"""
+		Adjust the current experience point total.
+
+		With an integer argument, that argument is added to the current xp total.
+		With no argument it just displays the current xp total. With the argument
+		'award' it calculates how much xp each player character gets, and resets the
+		total to 0.
+		"""
+		try:
+			self.xp += int(arguments)
+		except ValueError:
+			if arguments.strip().lower() == 'award':
+				award = int(self.xp / len(self.pcs))
+				self.xp = 0
+				print(self.voice['xp-award'].format(award))
+			elif arguments.strip():
+				print(self.voice['error-xp'])
+			else:
+				print(self.voice['confirm-xp'].format(self.xp))
+		else:
+			print(self.voice['confirm-xp'].format(self.xp))
+
 	def get_creature(self, creature_text, context = 'open'):
 		"""
 		Get a creature to apply a command to. (Creature)
@@ -1370,6 +1403,10 @@ class Egor(cmd.Cmd):
 					self.prompt = self.voice['prompt']
 				elif tag == 'weather-roll':
 					self.weather_roll = data.strip()
+				elif tag == 'xp':
+					self.xp = int(data)
+				elif tag == 'xp-method':
+					self.xp_method = data.strip()
 				elif tag in self.on_off_options:
 					attr = tag.replace('-', '_')
 					setattr(self, attr, data.strip() == 'True')
@@ -1489,6 +1526,8 @@ class Egor(cmd.Cmd):
 		self.tags = collections.defaultdict(list)
 		self.voice = voice.EGOR
 		self.weather_roll = '1d4*10'
+		self.xp = 0
+		self.xp_method = 'standard'
 		# Load any saved state.
 		try:
 			self.load_data()

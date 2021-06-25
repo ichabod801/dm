@@ -4,6 +4,7 @@ egor.py
 A command line interface for a D&D DM helper.
 
 Classes:
+CreatureError: An error getting a creature. (ValueError)
 Egor: A helper for a D&D Dungeon master. (cmd.Cmd)
 """
 
@@ -21,6 +22,9 @@ import markdown
 import text
 import voice
 import weather
+
+class CreatureError(ValueError):
+	pass
 
 class Egor(cmd.Cmd):
 	"""
@@ -1329,7 +1333,7 @@ class Egor(cmd.Cmd):
 			try:
 				creature = self.init[int(creature) - 1]
 			except ValueError:
-				raise ValueError(self.voice['error-creature-ndx'])
+				raise CreatureError(self.voice['error-creature-ndx'])
 		# Check non-combat containers outside of combat.
 		elif context == 'open' and creature in self.pcs:
 			creature = self.pcs[creature.lower()]
@@ -1337,13 +1341,12 @@ class Egor(cmd.Cmd):
 			creature = self.zoo[creature.lower()]
 		# Warn on not finding the creature.
 		else:
-			raise ValueError(self.voice['error-creature'].format(creature_text))
+			raise CreatureError(self.voice['error-creature'].format(creature_text))
 		# Handle ids within groups.
 		if 'group-of' in creature.name:
 			count = creature.name.split('-')[-1]
 			name = creature.name[:creature.name.index('-group')]
 			which = input(self.voice['query-creature'].format(name, count))
-			which = input(f'Which {name} (1-{count})? ')
 			creature = self.get_creature(f'{name}-{which}')
 		return creature
 
@@ -1472,6 +1475,8 @@ class Egor(cmd.Cmd):
 		# Catch errors and print the traceback.
 		try:
 			return super().onecmd(line)
+		except CreatureError as err:
+			print(err.args[0])
 		except:
 			traceback.print_exc()
 

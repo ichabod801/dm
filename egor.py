@@ -72,6 +72,7 @@ class Egor(cmd.Cmd):
 	do_next: Show the next person in the initiative queue. (None)
 	do_note: Record a note. (None)
 	do_npc: Creates a full random NPC. (None)
+	do_pc: Add or remove a player character. (None)
 	do_personality: Generate a random personality. (None)
 	do_quit: Exit the Egor interface. (True)
 	do_repeat: Repeat a command multiple times. (None)
@@ -86,11 +87,13 @@ class Egor(cmd.Cmd):
 	do_table: Roll on a table in the SRD or a campaign file. (None)
 	do_time: Update the current game time. (None)
 	do_uncondition: Remove a condition from a creature. (None)
+	do_xp: Adjust the current experience point total. (None)
 	get_creature: Get a creature to apply a command to. (Creature)
 	load_campaign: Load stored campaign data. (None)
 	load_data: Load any stored state data. (None)
 	markdown_search: Search a markdown document tree. (None)
 	new_note: Store a note. (None)
+	new_pc: Create a new entered player character. (None)
 
 	Overridden Methods:
 	default
@@ -760,6 +763,34 @@ class Egor(cmd.Cmd):
 		print(gender, culture, random.choice(text.CLASSES))
 		print()
 		self.do_personality('')
+
+	def do_pc(self, arguments):
+		"""
+		Add or remove a player character.
+
+		The pc command takes two arguments. The first argument is either add or remove,
+		depending on which you want to do. The second argument is the PC's name. When
+		entering a PC, you will be asked further information about the PC stats and
+		abilities.
+		"""
+		action, name = arguments.split(None, 1)
+		low_name = name.strip().lower()
+		if action == 'remove':
+			if low_name in self.pcs:
+				del self.pcs[low_name]
+				print(self.voice['confirm-pc-rem'].format(name))
+				self.changes = True
+			else:
+				print(self.voice['error-pc'].format(name))
+		elif action == 'add':
+			pc_data = [name]
+			pc_data.append(input(self.voice['pc-init']))
+			pc_data.append(input(self.voice['pc-ac']))
+			pc_data.append(input(self.voice['pc-hp']))
+			pc_data.append(input(self.voice['pc-abilities']))
+			self.new_pc(pc_data)
+		else:
+			print(self.voice['error-pc-arg'].format(action))
 
 	def do_personality(self, arguments):
 		"""
@@ -1465,6 +1496,40 @@ class Egor(cmd.Cmd):
 		for tag in self.tag_regex.findall(tags):
 			self.tags[tag].append(len(self.notes) - 1)
 
+	def new_pc(self, pc_data):
+		"""
+		Create a new entered player character. (None)
+
+		Parameters:
+		new_pc: The pc data from the user or stored data. (list of str)
+		"""
+		# Create a base creature with any specified abilities.
+		lines = [f'# {pc_data[0]}']
+		if pc_data[4].strip():
+			lines.append('| STR')
+			lines.append('| {}'.format(pc_data[4].replace(',', '|')))
+		pc = creature.Creature(markdown.HeaderNode('\n'.join(lines)))
+		pc.pc = True
+		# Set the initiative bonus.
+		if pc_data[1].strip():
+			pc.init_bonus = int(pc_data[1])
+		else:
+			pc.init_bonus = pc.bonuses['dex']
+		# Set the armor class.
+		if pc_data[2].strip():
+			pc.ac = int(pc_data[2])
+		else:
+			pc.ac = 10 + pc.bonuses['dex']
+		# Set the hit points.
+		if pc_data[3].strip():
+			pc.hp = int(pc_data[3])
+			pc.hp_max = pc.hp
+		# Add the pc to the data tracking.
+		key = pc.name.lower().replace(' ', '-')
+		self.pcs[key] = pc
+		self.pc_data[key] = pc_data
+		self.changes = True
+
 	def onecmd(self, line):
 		"""
 		Interpret the argument. (str)
@@ -1520,6 +1585,7 @@ class Egor(cmd.Cmd):
 		self.combatants = {}
 		self.dex_tiebreak = True
 		self.group_hp = True
+		self.pc_data = {}
 		self.pcs = {}
 		self.encounters = {}
 		self.init = []

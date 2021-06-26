@@ -1131,6 +1131,9 @@ class Egor(cmd.Cmd):
 			# Save the experience points.
 			data_file.write('xp: {}\n'.format(self.xp))
 			data_file.write('xp-method: {}\n'.format(self.xp_method))
+			# Save any pc mock ups created in the interface.
+			for pc_data in self.pc_data.values():
+				data_file.write('pc-data: {}\n'.format('; '.join(pc_data)))
 		self.changes = False
 		print(self.voice['confirm-store'])
 
@@ -1425,6 +1428,9 @@ class Egor(cmd.Cmd):
 						self.encounters[name].append((bad_name.strip(), count.strip()))
 				elif tag == 'note':
 					self.new_note(data.strip())
+				elif tag == 'pc-data':
+					pc_data = tuple(word.strip() for word in data.split(';'))
+					self.new_pc(pc_data)
 				elif tag == 'season':
 					self.season = data.strip()
 				elif tag == 'time':
@@ -1580,7 +1586,6 @@ class Egor(cmd.Cmd):
 		self.auto_tag = ''
 		self.average_hp = False
 		self.campaign_folder = ''
-		self.changes = False
 		self.climate = 'temperate'
 		self.combatants = {}
 		self.dex_tiebreak = True
@@ -1607,6 +1612,11 @@ class Egor(cmd.Cmd):
 			pass
 		if self.campaign_folder:
 			self.load_campaign()
+			# Restore any overwritten pcs.
+			for pc_data in self.pc_data.values():
+				self.new_pc(pc_data)
+		# Track changes.
+		self.changes = False
 		# Formatting.
 		print()
 

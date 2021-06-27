@@ -647,10 +647,12 @@ class Egor(cmd.Cmd):
 					data = self.zoo[name.lower()]
 				else:
 					# Ask for the initiative bonus if you can't find it.
-					# !! need a way out of this for mistakes.
-					init = int(input(self.voice['set-init-bonus'].format(name)))
-					data = creature.Creature(markdown.HeaderNode(f'# {name}'))
-					data.init_bonus = init
+					init = input(self.voice['set-init-bonus'].format(name))
+					if init.strip():
+						data = creature.Creature(markdown.HeaderNode(f'# {name}'))
+						data.init_bonus = int(init)
+					else:
+						continue
 				# Create and roll initiative for the bad guys.
 				average_hp = self.average_hp or (group and self.group_hp)
 				for bad_guy in range(count):

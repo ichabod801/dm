@@ -405,14 +405,17 @@ class Egor(cmd.Cmd):
 				continue
 			# Get the number of monsters.
 			# !! needs groups, do with one in the init, no number, all in combatants.
-			count = input(self.voice['choose-bad-count'])
+			count = input(self.voice['choose-bad-count']).lower()
+			group = 'g' in count
+			if group:
+				count = count.replace('g', '')
 			if count.strip():
 				if not (count.isdigit() or dice.DICE_REGEX.match(count)):
 					print(self.voice['error-bad-count'])
 					continue
 			else:
 				count = 1
-			self.encounters[name].append((bad_guy, count))
+			self.encounters[name].append((bad_guy, count, group))
 		self.changes = True
 
 	def do_git(self, arguments):
@@ -576,10 +579,10 @@ class Egor(cmd.Cmd):
 				enc_name = enc_name.strip().lower()
 			print(self.voice['confirm-encounter'])
 			encounter = []
-			for name, roll in self.encounters[enc_name]:
+			for name, roll, group in self.encounters[enc_name]:
 				count = dice.roll(roll)
 				print(f'{count}x {name}')
-				encounter.append((name, str(count)))
+				encounter.append((name, str(count), group))
 			print('')
 		# If you are not adding, set up the initiative and the PCs.
 		if not add:
@@ -599,7 +602,7 @@ class Egor(cmd.Cmd):
 				self.init.append(pc)
 		# Get and add an encounter if requested.
 		if encounter:
-			for name, roll in encounter:
+			for name, roll, group in encounter:
 				data = self.zoo[name]
 				count = dice.roll(roll)
 				for bad_guy in range(count):
@@ -608,9 +611,16 @@ class Egor(cmd.Cmd):
 					else:
 						sub_name = name
 					npc = data.copy(sub_name)
+					if not group:
+						npc.init()
+						self.init.append(npc)
+					self.combatants[npc.name.lower()] = npc
+				# Handle groups
+				if group:
+					sub_name = f'{name}-group-of-{count}'
+					npc = data.copy(sub_name, average_hp = True)
 					npc.init()
 					self.init.append(npc)
-					self.combatants[npc.name.lower()] = npc
 		# Otherwise get the monsters from the DM.
 		else:
 			while True:
@@ -1119,7 +1129,7 @@ class Egor(cmd.Cmd):
 			# Save any encounters.
 			if self.encounters:
 				for name, bad_guys in self.encounters.items():
-					bad_texts = [f'{name}, {count}' for name, count in bad_guys]
+					bad_texts = [f'{name}, {count}, {group}' for name, count, group in bad_guys]
 					enc_text = 'encounter: {} = {}\n'.format(name, '; '.join(bad_texts))
 					data_file.write(enc_text)
 			# Save the weather data.
@@ -1424,8 +1434,9 @@ class Egor(cmd.Cmd):
 					bad_texts = bad_guys.split(';')
 					self.encounters[name] = []
 					for text in bad_texts:
-						bad_name, count = text.split(',')
-						self.encounters[name].append((bad_name.strip(), count.strip()))
+						bad_name, count, group = text.split(',')
+						group = group.strip().lower() == 'True'
+						self.encounters[name].append((bad_name.strip(), count.strip(), group))
 				elif tag == 'note':
 					self.new_note(data.strip())
 				elif tag == 'pc-data':

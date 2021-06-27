@@ -53,6 +53,7 @@ class Egor(cmd.Cmd):
 	time_vars: Variables for game time and alarms. (dict of str: str)
 
 	Methods:
+	add_encounter: Add an encounter to the initiative tracking. (None)
 	alarm_check: Check for any alarms that should have gone off. (None)
 	combat_text: Print a summary of the current combat. (None)
 	do_alarm: Set an alarm. (None)
@@ -88,12 +89,15 @@ class Egor(cmd.Cmd):
 	do_time: Update the current game time. (None)
 	do_uncondition: Remove a condition from a creature. (None)
 	do_xp: Adjust the current experience point total. (None)
+	get_combatants: Get additional combatants from the user. (None)
 	get_creature: Get a creature to apply a command to. (Creature)
+	get_encounter: Get an encounter from the user. (list)
 	load_campaign: Load stored campaign data. (None)
 	load_data: Load any stored state data. (None)
 	markdown_search: Search a markdown document tree. (None)
 	new_note: Store a note. (None)
 	new_pc: Create a new entered player character. (None)
+	set_initiative: Set up a new initiative order, including the PCs. (None)
 
 	Overridden Methods:
 	default
@@ -116,6 +120,33 @@ class Egor(cmd.Cmd):
 	prompt = 'Yes, master? '
 	tag_regex = re.compile(r'[a-zA-Z0-9\-]+')
 	time_vars = {'combat': '10', 'long-rest': '8:00', 'room': '10', 'short-rest': '60'}
+
+	def add_encounter(self, encounter):
+		"""
+		Add an encounter to the initiative tracking. (None)
+
+		Parameters:
+		encounter: An encounter specification from get_encounter. (list of tuple)
+		"""
+		for name, roll, group in encounter:
+			data = self.zoo[name]
+			count = dice.roll(roll)
+			for bad_guy in range(count):
+				if count > 1:
+					sub_name = f'{name}-{bad_guy + 1}'
+				else:
+					sub_name = name
+				npc = data.copy(sub_name)
+				if not group:
+					npc.init()
+					self.init.append(npc)
+				self.combatants[npc.name.lower()] = npc
+			# Handle groups
+			if group:
+				sub_name = f'{name}-group-of-{count}'
+				npc = data.copy(sub_name, average_hp = True)
+				npc.init()
+				self.init.append(npc)
 
 	def alarm_check(self, time_spec):
 		"""
@@ -559,119 +590,24 @@ class Egor(cmd.Cmd):
 		equivalent of rolling off with d20s) can be done with the random-tiebreak
 		option.
 		"""
-		# !! refactor for size
 		# Parse the arguments.
 		arg_words = arguments.split()
 		add = '+' in arg_words or 'add' in arg_words
-		encounter = '&' in arg_words or 'encounter' in arg_words
+		encounter_flag = '&' in arg_words or 'encounter' in arg_words
 		# Check for the encounter (if it's random the DM will want to know who it is first)
-		if encounter:
-			enc_name = input(self.voice['choose-encounter'])
-			if enc_name[0] == '$':
-				enc_re = re.compile(enc_name[1:])
-				possible = [name for name in self.encounters if enc_re.match(name)]
-				if possible:
-					enc_name = random.choice(possible)
-				else:
-					print(self.voice['error-enc-regex'])
-					return
-			else:
-				enc_name = enc_name.strip().lower()
-			print(self.voice['confirm-encounter'])
-			encounter = []
-			for name, roll, group in self.encounters[enc_name]:
-				count = dice.roll(roll)
-				print(f'{count}x {name}')
-				encounter.append((name, str(count), group))
+		if encounter_flag:
+			encounter = self.get_encounter()
 			print('')
 		# If you are not adding, set up the initiative and the PCs.
 		if not add:
 			# Set up the initiative tracking.
-			self.init = []
-			self.combatants = self.pcs.copy()
-			self.init_count = 0
-			self.round = 1
-			# Get initiative for the PCs.
-			for name, pc in self.combatants.items():
-				init = input(self.voice['set-init'].format(name.capitalize()))
-				# Roll initiative if none given.
-				if init.strip():
-					pc.initiative = int(init)
-				else:
-					pc.init()
-				self.init.append(pc)
+			self.set_initiative()
 		# Get and add an encounter if requested.
-		if encounter:
-			for name, roll, group in encounter:
-				data = self.zoo[name]
-				count = dice.roll(roll)
-				for bad_guy in range(count):
-					if count > 1:
-						sub_name = f'{name}-{bad_guy + 1}'
-					else:
-						sub_name = name
-					npc = data.copy(sub_name)
-					if not group:
-						npc.init()
-						self.init.append(npc)
-					self.combatants[npc.name.lower()] = npc
-				# Handle groups
-				if group:
-					sub_name = f'{name}-group-of-{count}'
-					npc = data.copy(sub_name, average_hp = True)
-					npc.init()
-					self.init.append(npc)
+		if encounter_flag:
+			self.add_encounter(encounter)
 		# Otherwise get the monsters from the DM.
 		else:
-			while True:
-				# Get the monster.
-				name = input(self.voice['choose-bad-guy']).strip()
-				if not name:
-					break
-				name = name.replace(' ', '-')
-				# Get the number of monsters.
-				count = input(self.voice['choose-bad-count']).lower()
-				# Check for groups.
-				if 'g' in count:
-					group = True
-					count = count.replace('g', '')
-				else:
-					group = False
-				# Parse the count.
-				if count.strip():
-					count = int(count)
-				else:
-					count = 1
-				# Find the monster's stats.
-				if name.lower() in self.zoo:
-					data = self.zoo[name.lower()]
-				else:
-					# Ask for the initiative bonus if you can't find it.
-					init = input(self.voice['set-init-bonus'].format(name))
-					if init.strip():
-						data = creature.Creature(markdown.HeaderNode(f'# {name}'))
-						data.init_bonus = int(init)
-					else:
-						continue
-				# Create and roll initiative for the bad guys.
-				average_hp = self.average_hp or (group and self.group_hp)
-				for bad_guy in range(count):
-					# Number the bad guys if there's more than one.
-					if count > 1:
-						sub_name = f'{name}-{bad_guy + 1}'
-					else:
-						sub_name = name
-					npc = data.copy(sub_name, average_hp)
-					if not group:
-						npc.init()
-						self.init.append(npc)
-					self.combatants[npc.name.lower()] = npc
-				# Handle groups
-				if group:
-					sub_name = f'{name}-group-of-{count}'
-					npc = data.copy(sub_name, average_hp = True)
-					npc.init()
-					self.init.append(npc)
+			self.get_combatants()
 		# Sort by the initiative rolls.
 		if add:
 			# Save the current point in combat, if adding to the combat.
@@ -1360,6 +1296,58 @@ class Egor(cmd.Cmd):
 		else:
 			print(self.voice['confirm-xp'].format(self.xp))
 
+	def get_combatants(self):
+		"""Get additional combatants from the user. (None)"""
+		while True:
+			# Get the monster.
+			name = input(self.voice['choose-bad-guy']).strip()
+			if not name:
+				break
+			name = name.replace(' ', '-')
+			# Get the number of monsters.
+			count = input(self.voice['choose-bad-count']).lower()
+			# Check for groups.
+			if 'g' in count:
+				group = True
+				count = count.replace('g', '')
+			else:
+				group = False
+			# Parse the count.
+			if count.strip():
+				count = int(count)
+			else:
+				count = 1
+			# Find the monster's stats.
+			if name.lower() in self.zoo:
+				data = self.zoo[name.lower()]
+			else:
+				# Ask for the initiative bonus if you can't find it.
+				init = input(self.voice['set-init-bonus'].format(name))
+				if init.strip():
+					data = creature.Creature(markdown.HeaderNode(f'# {name}'))
+					data.init_bonus = int(init)
+				else:
+					continue
+			# Create and roll initiative for the bad guys.
+			average_hp = self.average_hp or (group and self.group_hp)
+			for bad_guy in range(count):
+				# Number the bad guys if there's more than one.
+				if count > 1:
+					sub_name = f'{name}-{bad_guy + 1}'
+				else:
+					sub_name = name
+				npc = data.copy(sub_name, average_hp)
+				if not group:
+					npc.init()
+					self.init.append(npc)
+				self.combatants[npc.name.lower()] = npc
+			# Handle groups
+			if group:
+				sub_name = f'{name}-group-of-{count}'
+				npc = data.copy(sub_name, average_hp = True)
+				npc.init()
+				self.init.append(npc)
+
 	def get_creature(self, creature_text, context = 'open'):
 		"""
 		Get a creature to apply a command to. (Creature)
@@ -1395,6 +1383,33 @@ class Egor(cmd.Cmd):
 			which = input(self.voice['query-creature'].format(name, count))
 			creature = self.get_creature(f'{name}-{which}')
 		return creature
+
+	def get_encounter(self):
+		"""
+		Get an encounter from the user and confirm the creatures in it. (list)
+
+		The return value is a list of the creatures in the encounter, each represented
+		by a tuple of their name, the number of that creature, and if it should be 
+		treated as a group.
+		"""
+		enc_name = input(self.voice['choose-encounter'])
+		if enc_name[0] == '$':
+			enc_re = re.compile(enc_name[1:])
+			possible = [name for name in self.encounters if enc_re.match(name)]
+			if possible:
+				enc_name = random.choice(possible)
+			else:
+				print(self.voice['error-enc-regex'])
+				return
+		else:
+			enc_name = enc_name.strip().lower()
+		print(self.voice['confirm-encounter'])
+		encounter = []
+		for name, roll, group in self.encounters[enc_name]:
+			count = dice.roll(roll)
+			print(f'{count}x {name}')
+			encounter.append((name, str(count), group))
+		return encounter
 
 	def init_sorter(self, char):
 		"""
@@ -1632,6 +1647,22 @@ class Egor(cmd.Cmd):
 		self.changes = False
 		# Formatting.
 		print()
+
+	def set_initiative(self):
+		"""Set up a new initiative order, including the PCs. (None)"""
+		self.init = []
+		self.combatants = self.pcs.copy()
+		self.init_count = 0
+		self.round = 1
+		# Get initiative for the PCs.
+		for name, pc in self.combatants.items():
+			init = input(self.voice['set-init'].format(name.capitalize()))
+			# Roll initiative if none given.
+			if init.strip():
+				pc.initiative = int(init)
+			else:
+				pc.init()
+			self.init.append(pc)
 
 if __name__ == '__main__':
 	egor = Egor()

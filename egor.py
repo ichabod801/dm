@@ -600,7 +600,6 @@ class Egor(cmd.Cmd):
 			print('')
 		# If you are not adding, set up the initiative and the PCs.
 		if not add:
-			# Set up the initiative tracking.
 			self.set_initiative()
 		# Get and add an encounter if requested.
 		if encounter_flag:

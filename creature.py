@@ -223,13 +223,16 @@ class Creature(object):
 	_parse_ac: Parse the creature's armor class. (None)
 	_parse_action: Parse one of the creature's actions. (None)
 	_parse_challenge: Parse the creature's challenge rating. (None)
+	_parse_header: Parse special headers in the creature description. (None)
 	_parse_hp: Parse the creature's hit points. (None)
 	_parse_languages: Parse the creature's languages. (None)
 	_parse_legendary: Parse one of the creature's legendary actions. (None)
+	_parse_lines: Parse the lines of a text node. (None)
 	_parse_saves: Parse the creature's saving throw bonuses. (None)
 	_parse_skills: Parse the creature's skill bonuses. (None)
 	_parse_size: Parse the creature's size, type, sub-type, and alignment. (None)
 	_parse_speed: Parse the creature's movement speed. (None)
+	_set_defaults: Set the default attributes for a creature. (None)
 	attack: Attack something. (tuple of int, text)
 	combat_text: Text representation for their turn in combat. (str)
 	copy: Create an independent version of the creature. (Creature)
@@ -265,120 +268,17 @@ class Creature(object):
 		Parameters:
 		node: The creature's header node in a SRD style document. (HeaderNode)
 		"""
-		# !! refactor
 		# Set the creature's name.
 		self.name = node.name.strip()
 		self.name_regex = re.compile(r'\*\*{}e?s?\*\*'.format(self.name), re.IGNORECASE)
 		# Set the creature's default attributes.
-		self.ac = 10
-		self.ac_mod = 0
-		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
-		self.actions = {}
-		self.attacks = {}
-		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
-		self.conditions = {}
-		self.cr = 0
-		self.description = ''
-		self.features = {}
-		self.hp_roll = '20d12'
-		self.hp = 140
-		self.hp_max = 140
-		self.hp_temp = 0
-		self.init_bonus = 0
-		self.initiative = 0
-		self.legendary = {}
-		self.pc = False
-		self.reactions = {}
-		self.saves = self.bonuses.copy()
-		self.size = 'Medium'
-		self.skills = {skill: 0 for skill in self.skill_abilities}
-		self.speed = 30
-		self.other_speeds = ''
-		self.type = 'unknown'
-		self.xp = 0
-		# Set the Tracking variables.
-		abilities = False
-		last_key = ''
-		last_dict = None
+		self._set_defaults()
 		# Loop through the node content.
 		for node in node.children:
 			if hasattr(node, 'lines'):  # if it has lines then it is a TextNode (avoids circular import)
-				for line in node.lines:
-					# Check for abilities.
-					if abilities:
-						if line[1] != '-':
-							self._parse_abilities(line)
-							abilities = False
-					# Check for the starting size line.
-					elif line[:5] in self.sizes:
-						self._parse_size(line)
-					# Check for non-standard features.
-					elif line.startswith('***'):
-						blank, title, text = line.split('***')
-						last_dict, last_key = self._parse_feature(title, text)
-					# Check for standard features.
-					elif line.startswith('**'):
-						blank, title, text = line.split('**')
-						last = getattr(self, self.two_stars.get(title, '_parse_feature'))(title, text)
-						if last is not None:
-							last_dict, last_key = last
-					# Check for starting to check for abilities.
-					elif line.startswith('| STR'):
-						abilities = True
-					# Append loose paragraphs to the last feature found.
-					elif line.strip():
-						last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+				self._parse_lines(node)
 			else:
-				# !! Try to refactor these all into one.
-				# !! Otherwise descriptions are only found after actions, not reactions/legendary actions.
-				# Search through the actions section.
-				if node.name.strip() == 'Actions':
-					for child in node.children:
-						for line in child.lines:
-							# Handle named actions.
-							if line.startswith('***'):
-								last_dict, last_key = self._parse_action(line)
-							# Add unnamed actions to the last action.
-							elif line.strip():
-								if self.name_regex.search(line):
-									self.description = line
-									last_dict = 'description'
-								elif last_dict == 'description':
-									self.description = f'{self.description}\n\n{line}'
-								elif last_dict == self.actions:
-									last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
-								else:
-									last_dict[last_key].add_text(line)
-				# Search through the actions section.
-				if node.name == 'Reactions':
-					for child in node.children:
-						for line in child.lines:
-							# Handle named actions.
-							if line.startswith('***'):
-								last_dict, last_key = self._parse_reaction(line)
-							# Add unnamed actions to the last action.
-							elif line.strip():
-								if last_dict == self.reactions:
-									last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
-								else:
-									last_dict[last_key].add_text(line)
-				# Search through the legendary actions section, if any.
-				elif node.name == 'Legendary Actions':
-					last_key = ''
-					for child in node.children:
-						for line in child.lines:
-							# Check for the legendary actions.
-							if line.startswith('**'):
-								last_key = self._parse_legendary(line)
-							# Check for loose paragraphs.
-							elif line.strip():
-								# Add to previous legendary actions.
-								if last_key:
-									new_text = '{}\n\n{}'.format(self.legendary[last_key], line)
-									self.legendary[last_key] = new_text
-								# Assume the first one describes legendary actions in general.
-								else:
-									self.legendary['Legendary Actions'] = line
+				self._parse_header(node)
 
 	def __repr__(self):
 		"""Debugging text representation. (str)"""
@@ -467,6 +367,59 @@ class Creature(object):
 		self.features[title] = text[1:].strip() # [1:] gets rid of punctuation after title.
 		return self.features, title
 
+	def _parse_header(self, node):
+		"""Parse special headers in the creature description. (None)"""
+		last_key = ''
+		last_dict = None
+		# Search through the actions section.
+		if node.name.strip() == 'Actions':
+			for child in node.children:
+				for line in child.lines:
+					# Handle named actions.
+					if line.startswith('***'):
+						last_dict, last_key = self._parse_action(line)
+					# Add unnamed actions to the last action.
+					elif line.strip():
+						if self.name_regex.search(line):
+							self.description = line
+							last_dict = 'description'
+						elif last_dict == 'description':
+							self.description = f'{self.description}\n\n{line}'
+						elif last_dict == self.actions:
+							last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+						else:
+							last_dict[last_key].add_text(line)
+		# Search through the actions section.
+		if node.name == 'Reactions':
+			for child in node.children:
+				for line in child.lines:
+					# Handle named actions.
+					if line.startswith('***'):
+						last_dict, last_key = self._parse_reaction(line)
+					# Add unnamed actions to the last action.
+					elif line.strip():
+						if last_dict == self.reactions:
+							last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+						else:
+							last_dict[last_key].add_text(line)
+		# Search through the legendary actions section, if any.
+		elif node.name == 'Legendary Actions':
+			last_key = ''
+			for child in node.children:
+				for line in child.lines:
+					# Check for the legendary actions.
+					if line.startswith('**'):
+						last_key = self._parse_legendary(line)
+					# Check for loose paragraphs.
+					elif line.strip():
+						# Add to previous legendary actions.
+						if last_key:
+							new_text = '{}\n\n{}'.format(self.legendary[last_key], line)
+							self.legendary[last_key] = new_text
+						# Assume the first one describes legendary actions in general.
+						else:
+							self.legendary['Legendary Actions'] = line
+
 	def _parse_hp(self, title, text):
 		"""
 		Parse the creature's hit points. (None)
@@ -503,6 +456,35 @@ class Creature(object):
 		blank, name, text = line.split('**')
 		self.legendary[name] = text[1:].strip()
 		return name
+
+	def _parse_lines(self, node):
+		"""Parse the lines of a text node. (None)"""
+		abilities = False
+		for line in node.lines:
+			# Check for abilities.
+			if abilities:
+				if line[1] != '-':
+					self._parse_abilities(line)
+					abilities = False
+			# Check for the starting size line.
+			elif line[:5] in self.sizes:
+				self._parse_size(line)
+			# Check for non-standard features.
+			elif line.startswith('***'):
+				blank, title, text = line.split('***')
+				last_dict, last_key = self._parse_feature(title, text)
+			# Check for standard features.
+			elif line.startswith('**'):
+				blank, title, text = line.split('**')
+				last = getattr(self, self.two_stars.get(title, '_parse_feature'))(title, text)
+				if last is not None:
+					last_dict, last_key = last
+			# Check for starting to check for abilities.
+			elif line.startswith('| STR'):
+				abilities = True
+			# Append loose paragraphs to the last feature found.
+			elif line.strip():
+				last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
 
 	def _parse_reaction(self, line):
 		"""
@@ -593,6 +575,26 @@ class Creature(object):
 		else:
 			self.speed = int(text.split()[0])
 			self.other_speeds = ''
+
+	def _set_defaults(self):
+		"""Set the default attributes for a creature."""
+		self.ac = 10
+		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
+		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
+		self.saves = self.bonuses.copy()
+		self.actions, self.attacks, self.conditions, self.features = {}, {}, {}, {}
+		self.legendary, self.reactions = {}, {}
+		self.ac_mod, self.cr, self.hp_temp, self.hp_max, self.init_bonus = 0, 0, 0, 0, 0
+		self.initiative, self.xp = 0, 0
+		self.description = ''
+		self.hp_roll = '20d12'
+		self.hp, self.hp_max = 140, 140
+		self.pc = False
+		self.size = 'Medium'
+		self.skills = {skill: 0 for skill in self.skill_abilities}
+		self.speed = 30
+		self.other_speeds = ''
+		self.type = 'unknown'
 
 	def auto_attack(self):
 		"""Do all attacks without a target. (str)"""

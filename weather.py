@@ -12,8 +12,8 @@ temperature: Generate a random temperature message. (tuple)
 wind: Generate a random wind message. (str)
 """
 
-import dice
-import text
+from . import dice
+from . import text
 
 WEATHER_DATA = {'cold-arid':
 	{'spring': (38, 64, -4), 'summer': (58, 92, -5), 'fall': (39, 69, -4), 'winter': (25, 46, -3)},

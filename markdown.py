@@ -16,9 +16,9 @@ import os
 import random
 import re
 
-import creature
-import dice
-import gtime
+from . import creature
+from . import dice
+from . import gtime
 
 class Node(object):
 	"""

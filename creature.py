@@ -12,7 +12,7 @@ DummyNode: A fake header node for creating blank creatures. (namedtuple)
 import collections
 import re
 
-import dice
+from . import dice
 
 class Attack(object):
 	"""

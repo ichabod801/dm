@@ -10,18 +10,19 @@ Egor: A helper for a D&D Dungeon master. (cmd.Cmd)
 
 import cmd
 import collections
+import os
 import random
 import re
 import textwrap
 import traceback
 
-import creature
-import dice
-import gtime
-import markdown
-import text
-import voice
-import weather
+from . import creature
+from . import dice
+from . import gtime
+from . import markdown
+from . import text
+from . import voice
+from . import weather
 
 class CreatureError(ValueError):
 	pass
@@ -1039,7 +1040,7 @@ class Egor(cmd.Cmd):
 
 	def do_store(self, arguments):
 		"""Save the current data."""
-		with open('dm.dat', 'w') as data_file:
+		with open(os.path.join(self.location, 'dm.dat'), 'w') as data_file:
 			# Save the alarms.
 			for alarm in self.alarms:
 				data_file.write('alarm: {}\n'.format(alarm.data()))
@@ -1424,18 +1425,19 @@ class Egor(cmd.Cmd):
 
 	def load_campaign(self):
 		"""Load stored campaign data. (None)"""
-		self.campaign = markdown.SRD(self.campaign_folder)
+		self.campaign = markdown.SRD(os.path.join(self.location, self.campaign_folder))
 		self.tables = self.srd.tables.copy()
 		self.tables.update(self.campaign.tables)
 		self.zoo = self.srd.zoo.copy()
 		self.zoo.update(self.campaign.zoo)
 		self.pcs = self.campaign.pcs
-		self.campaign.calendar.set_year(self.time.year)
-		gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
+		if self.campaign.calendar:
+			self.campaign.calendar.set_year(self.time.year)
+			gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
 
 	def load_data(self):
 		"""Load any stored state data. (None)"""
-		with open('dm.dat') as data_file:
+		with open(os.path.join(self.location, 'dm.dat')) as data_file:
 			for line in data_file:
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
@@ -1603,7 +1605,8 @@ class Egor(cmd.Cmd):
 	def preloop(self):
 		"""Set up the interface. (None)"""
 		# Load the SRD.
-		self.srd = markdown.SRD()
+		self.location = os.path.dirname(os.path.abspath(__file__))
+		self.srd = markdown.SRD(os.path.join(self.location, 'srd'))
 		self.tables = self.srd.tables.copy()
 		self.zoo = self.srd.zoo.copy()
 		# Set the default state.
@@ -1617,11 +1620,11 @@ class Egor(cmd.Cmd):
 		self.combatants = {}
 		self.dex_tiebreak = True
 		self.group_hp = True
-		self.pc_data = {}
-		self.pcs = {}
 		self.encounters = {}
 		self.init = []
 		self.notes = []
+		self.pc_data = {}
+		self.pcs = {}
 		self.random_tiebreak = False
 		self.season = 'spring'
 		self.time = gtime.Time(1, 1, 6, 0)

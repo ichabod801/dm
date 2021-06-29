@@ -145,7 +145,7 @@ You can store notes about the game with the note command, and later review them
 with the study command. Notes can be tagged to assist later searches (see 'help
 note'). You can set automatic tags for every note with the autotag command.
 
-You can also search the Source Resource Document with the srd command. You can 
+You can also search the Source Reference Document with the srd command. You can 
 add your own campaign files in markdown format, and they can be loaded by using 
 the set command. Once loaded, your campaign files can be searched with the 
 campaign command. You can define name formats in the Names chapter of your 
@@ -176,7 +176,8 @@ automatically, as a time saver. There is an autoattack (@@) command to repeat
 this as necessary.
 
 You can generate random NPC names with the name command, and random NPC
-personalities with the personality command.
+personalities with the personality command, if you have set up campaign files
+with name definitions.
 
 You can generate weather for the day with the weather command, which takes a
 climate and a season as arguments. You can set the default climate and season

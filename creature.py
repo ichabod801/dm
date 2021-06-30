@@ -286,7 +286,7 @@ class Creature(object):
 
 	def __str__(self):
 		"""Human readable text representation. (str)"""
-		text = f'{self.name}; {self.hp}/{self.hp_max}'
+		text = f'{self.name}; AC {self.ac + self.ac_mod}; HP {self.hp}/{self.hp_max}'
 		if self.conditions:
 			text = '{}; {}'.format(text, ', '.join(self.conditions.keys()))
 		return text

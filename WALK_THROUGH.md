@@ -54,9 +54,12 @@ Yes, master? srd invisibility
 
 **Duration:** Concentration, up to 1 hour
 
-A creature you touch becomes invisible until the spell ends. Anything the target is wearing or carrying is invisible as long as it is on the target's person. The spell ends for a target that attacks or casts a spell.
+A creature you touch becomes invisible until the spell ends. Anything the target is wearing or carrying is 
+invisible as long as it is on the target's person. The spell ends for a target that attacks or casts a 
+spell.
 
-***At Higher Levels***. When you cast this spell using a spell slot of 3rd level or higher, you can target one additional creature for each slot level above 2nd.
+***At Higher Levels***. When you cast this spell using a spell slot of 3rd level or higher, you can target 
+one additional creature for each slot level above 2nd.
 ```
 
 The default is to search the headers of the SRD. If you preface the search with a $, Egor will do a regular expression search on the headers. If you preface the search with a +, he will do a regular expression search of the text. If multiple matching sections are found, Egor will list the matching sections and let you choose which one to view.
@@ -74,7 +77,8 @@ Which scroll would you like to peruse, master? 3
 
 - A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.
 - The condition ends if the grappler is incapacitated (see the condition).
-- The condition also ends if an effect removes the grappled creature from the reach of the grappler or grappling effect, such as when a creature is hurled away by the *thunder-wave* spell.
+- The condition also ends if an effect removes the grappled creature from the reach of the grappler or 
+grappling effect, such as when a creature is hurled away by the *thunder-wave* spell.
 ```
 
 If you are tired of the obsequious deformed helper tone that Egor uses, you can change this with the set command:
@@ -105,7 +109,7 @@ How many hit points do they have? 54
 What are their ability scores (comma separated)?
 ```
 
-Notice that I didn't add the ability scores. Really what you need is the armor class. You don't need hp unless you don't trust your player's to track them. You don't need the initiative bonus if they are going to be rolling their own initiatives.
+Notice that I didn't add the ability scores. Really what you need is the armor class, so other creatures can attack them correctly. You don't need hp unless you don't trust your player's to track them. You don't need the initiative bonus if they are going to be rolling their own initiatives.
 
 You can get a lot more detail about the player characters into the system by using the campaign files. See the 'Campaign Files' documentation for more information on that. Also note that any campaign files you do create can be searched just like the SRD. To do so, use the campaign command rather than the srd command.
 
@@ -134,11 +138,11 @@ HP: 54/54
 Attacks:
 -------------------
 
-2: orc-3; 16/16
-3: flint; 81/81
-4: orc-2; 14/14
-5: tentaclor; 130/130
-6: orc-1; 13/13
+2: orc-3; AC 13; 16/16
+3: flint; AC 21; 81/81
+4: orc-2; AC 13; 14/14
+5: tentaclor; AC 10; 130/130
+6: orc-1; AC 13; 13/13
 ```
 
 There's a lot going on here, which is typical of D&D combat. Note that I entered an initiative for Flint, but not for Claw Claw. If you don't enter one, the system will roll it for you. This is useful if there are NPCs with the party that you are running. Also note how 'claw claw' became 'Claw-claw'. That's just how the system stores things, you can still reference her with 'claw claw' or 'Claw-claw'.
@@ -173,11 +177,11 @@ Attacks:
    B: Javelin, +5 to hit, 1d6+3 piercing
 -------------------
 
-3: flint; 81/81
-4: orc-2; 14/14
-5: tentaclor; 130/130
-6: orc-1; 13/13
-1: claw claw; 54/54
+3: flint; AC 13; 81/81
+4: orc-2; AC 21; 14/14
+5: tentaclor; AC 10; 130/130
+6: orc-1; AC 13; 13/13
+1: claw claw; AC 15; 54/54
 ```
 
 We can see a bit more information for the orc, since it was fully loaded from the SRD. But it's still a pretty abbreviated stat block (I found the full stat block was too confusing in combat). But we can see the full stat block with the stats command, which we might want to do if we have forgotten what the Aggressive feature does.
@@ -222,7 +226,7 @@ Egor tells us the roll and the attack bonus, and the damage with the damage type
 
 The first problem is that typing `attack claw-claw greataxe` is going to get old fast, especially when trying to run a quick combat. Many of the commands have aliases to make them easier to type. You can find them in the help text for the command, in parentheses after the first line. So we can find that the alias for the attack command is '@'. Next, combatants can be refered to by their place in the initiative order. So instead of 'claw-claw', we could just use '1'. Finally, you'll note that the attacks for a creature have letters before them. You can use these to reference the attacks. So `attack claw-claw greataxe` can be written as `@ 1 a`, which is much easier to type. Also, the 'A' attack for a creature is considered to be the default. So you could write it as `@ 1`. Note that if you are specifying (dis)advantage or a situational bonus, you have to specify the attack.
 
-The second problem comes when Claw Claw's player says "I'm blade singing right now. Did you take into account my +3 int bonus to AC?" No, actually we didn't. Whoops. Now, as noted, we could use a situational bonus here, and do the attack as `@ 1 a -3`. But that's a pain, and we need to undo the 4 points of damage.
+The second problem comes when Claw Claw's player says "I'm blade singing right now. Did you take into account my +3 int bonus to AC?" No, actually we didn't. And we can see from the attack text that it wouldn't have hit (12 + 5 < 18). Now, as noted, we could use a situational bonus here, and do the attack as `@ 1 a -3`. But that's a pain, and we need to undo the 4 points of damage.
 
 ```
 EGOR >> heal 1 4
@@ -251,11 +255,11 @@ HP: 81/81
 Attacks:
 -------------------
 
-4: orc-2; 14/14
-5: tentaclor; 130/130
-6: orc-1; 13/13
-1: claw claw; 54/54
-2: orc-3; 4/16
+4: orc-2; AC 13; 14/14
+5: tentaclor; AC 10; 130/130
+6: orc-1; AC 13; 13/13
+1: claw claw; AC 18; 54/54
+2: orc-3; AC 13; 4/16
 
 EGOR >> hit 2 8
 
@@ -263,7 +267,7 @@ orc-3 now has 0 HP.
 orc-3 has been removed from the initiative order.
 ```
 
-First, note that we used the alias 'n' for the 'next' command to get to Flint, the next combatant in the initiative order. Next, when we hit orc-3 (identified with his initiative order of 2) for 8 points, it dropped to 0 HP, and was automatically removed from the initiative order. Egor will do this for monsters, but not for player characters (to give them time to heal each other). You can use the set command to turn this off for all combatants (`set auto-kill false`). If you want to force something out of the initiative order otherwise, you can use the kill command.
+First, note that we used the alias 'n' for the 'next' command to get to Flint, the next combatant in the initiative order. Next, when we hit orc-3 (identified with his initiative order of 2) for 8 points, it dropped to 0 HP, and was automatically removed from the initiative order. Egor will do this for monsters, but not for player characters (to give them time to heal each other, or in case you are not closely tracking their HP). You can use the set command to turn this off for all combatants (`set auto-kill false`). If you want to force something out of the initiative order otherwise, you can use the kill command.
 
 Now, say Flint has another attack. He might go after orc-2, using 4 to identify him. Be careful of this, because when orc-3 is removed from the initiative order, that order changes. If at any point you need clarification of the current initiative order, you can see it again with the show command.
 
@@ -280,15 +284,15 @@ HP: 81/81
 Attacks:
 -------------------
 
-3: orc-2; 14/14
-4: tentaclor; 130/130
-5: orc-1; 13/13
-1: claw claw; 54/54
+3: orc-2; AC 13; 14/14
+4: tentaclor; AC 10; 130/130
+5: orc-1; AC 13; 13/13
+1: claw claw; AC 18; 54/54
 ```
 
 And now we can see that orc-2 is now identified by initiative order 3.
 
-After the combat is over, you might want to make some notes for future reference. You can do this with the note command, which has the alias &.
+After the combat is over, you might want to make some notes for future reference. You can do this with the note command, which has the alias '&'.
 
 ```
 EGOR >> & Flint killed his first orc. | combat

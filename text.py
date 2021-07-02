@@ -175,6 +175,15 @@ for damage. Also The auto-attack setting can be used to generate all attacks
 automatically, as a time saver. There is an autoattack (@@) command to repeat
 this as necessary.
 
+Experience points for killed creatures with full stat blocks are tracked by 
+the Egor system, but only if they are auto-killed at 0 hit points or killed
+with the kill command. The xp command can be used to add more xp, or to 
+calculate an even split of xp across the player characters.
+
+If you need to do skill checks or saving throws during combat (or any other 
+time), you can use the skill and save commands. The skill command can do a
+skill check for each PC, or it can check based on passive skill bonuses.
+
 You can generate random NPC names with the name command, and random NPC
 personalities with the personality command, if you have set up campaign files
 with name definitions.

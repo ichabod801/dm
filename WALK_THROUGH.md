@@ -1,6 +1,6 @@
 This is a quick walk through of a simple session of dm.py, to give you a basic idea of how to use the system.
 
-If you have save the files in a folder in your python path, you can start the system with an import:
+If you have saved the files in a folder in your python path, you can start the system with an import:
 
 ```
 import dm

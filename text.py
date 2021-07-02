@@ -16,14 +16,14 @@ HELP_GENERAL: The general help text for Egor. (str)
 HELP_SIGHT: Help text for vision and cover. (str)
 IDEALS: Possible personality ideals. (list of str)
 STRONG_WIND: A warning about high winds. (str)
-TRAITS: Possible persoanlity traits. (list of str)
+TRAITS: Possible personality traits. (list of str)
 """
 
 BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 'Forbidden love', 
 	'Has a treasured possession', 'Helps those who help him', 'Indebted to generous person', 
 	'Indebted to horrible person', 'Indebted to mentor', 'Indebted to an old friend', 'Lost their family', 
 	'Lost their love', 'Loyalty to allies', 'Loyalty to friends', 'Loyal to their nation', 
-	'Loyal to their people', 'Loyalty to their school', 'Loyalty to their sovreign', 
+	'Loyal to their people', 'Loyalty to their school', 'Loyalty to their sovereign', 
 	'Must outshine their rival', 'Needs family approval', 'Needs to undo a wrong they did to someone', 
 	'Never fail a loved one again', 'Protective of friends', 'Protecting secret knowledge', 
 	'Protects their loved ones', 'Revenge upon a person who abused their power',
@@ -35,7 +35,7 @@ BONDS = ['Duty to their students', 'Family first', 'Fear of someone they hurt', 
 	'Works to preserve an ancient text', 'Works for their temple or god']
 
 CLASSES = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin', 'Ranger', 'Rogue', 
-	'Sorceror', 'Warlock', 'Wizard']
+	'Sorcerer', 'Warlock', 'Wizard']
 
 EXTREME_COLD = """
 WARNING: Extreme cold while temperatures are below 1F. Characters must make a 
@@ -57,20 +57,20 @@ FLAWS = ['Alcohol addict', 'Angry and violent', 'Blabber mouth', 'Blunt', 'Blind
 	'Bloodthirsty', "Can't back down from being called a coward", "Can't keep a secret worth shit", 
 	"Can't lie worth shit", "Can't stand criticism", "Can't stand insults", "Can't stand losing arguments", 
 	'Compulsive liar', 'Constantly chases beauty', 'Conspiracy theorist', 'Coward', 
-	'Coward against stronger forces', 'Deflects blame onto others', 'Desparate for the rare and unique', 
+	'Coward against stronger forces', 'Deflects blame onto others', 'Desperate for the rare and unique', 
 	'Dislikes bathing', 'Does not trust others', 'Dogmatic', 'Drug addict', 'Easily distracted', 
 	'Elitist', 'Everyone is beneath me', 'Foot in mouth disease', 'Foul mouthed', 'Gambling addict', 
 	'Glutton', 'Greedy', 'Has a hated enemy', 'Hates plans and planning', 'Haunted by their past', 
 	'Incredibly intolerant', 'Jealous of those better than them', 'Kleptomaniac', 'Lazy', 
 	'Likes a good brawl', 'Little respect for those on a different path', 'Loose spender', 
 	'Loves to hurt those in authority', 'Might makes right', 'Needs power to conquer fear', 'Neat freak', 
-	'Never backs down', 'Never forgets a grude', 'No faith in allies', 'Obsessive collector', 'Paranoid', 
+	'Never backs down', 'Never forgets a grudge', 'No faith in allies', 'Obsessive collector', 'Paranoid', 
 	'Predator/prey mentality', 'Prefers unfair fights', 'Prefers well bred society', 'Proud', 'Reckless', 
 	'Rude', 'Sarcastic and insulting', 'Single-minded pursuit of goals', 'Snobbish about art', 
 	'Snobbish about food', 'Suspicious of outsiders', 'Suspicious of strangers', 
 	'The world revolves around them', 'Thinks they know best', 'Those who died were weak, and deserved it', 
 	'Too many secrets', 'Trusts authority too much', 'Trusts people of the same religion too much', 
-	'Unreliable', 'Very close-minded', 'Very judgemental, even of themselves', 'Vicious gossip', 
+	'Unreliable', 'Very close-minded', 'Very judgmental, even of themselves', 'Vicious gossip', 
 	'Will abandon others to save themselves']
 
 GOALS = ['Get out of poverty', 'Find the answer to a particular question', 'Knowledge is power', 
@@ -86,7 +86,7 @@ GOALS = ['Get out of poverty', 'Find the answer to a particular question', 'Know
 
 HEAVY_PRECIPITATION = """
 WARNING: An area with heavy precipitation is lightly obscured, and sight
-   preception checks are at disadvantage. If it is raining, hearing 
+   perception checks are at disadvantage. If it is raining, hearing 
    perception checks are also at disadvantage. Heavy rain also extinguishes
    open flames.
 """
@@ -94,7 +94,7 @@ WARNING: An area with heavy precipitation is lightly obscured, and sight
 HELP_CONDITIONS = """
 Blinded: Can't see, fails all checks requiring sight, attacks have dis-
    advantage, attacks against have advantage.
-Charmed: Can't attack the charmer or target them with harmul effects, charmer
+Charmed: Can't attack the charmer or target them with harmful effects, charmer
    has advantage on social interactions with creature.
 Deafened: Can't hear, fails all checks requiring hearing.
 Exhausted: Depends on level of exhaustion:
@@ -125,7 +125,7 @@ Restrained: Speed = 0, can't benefit from bonus to speed, attacks against have
    advantage, attacks have disadvantage, disadvantage on dex saves.
 Stunned: Incapacitated, can't move, and has limited speech. Fails all dex and
    str saves, attacks against have advantage.
-Unconcious: Incapacitated, can't move or speak, is unaware of it's surround-
+Unconscious: Incapacitated, can't move or speak, is unaware of it's surround-
    ings, drops what it is holding, falls prone, fails all dex and str saves,
    attacks against have advantage, any attack is a crit if within 5 ft.
 """
@@ -223,8 +223,8 @@ Half cover: Grants a +2 bonus to AC and Dexterity saves. Half cover = half
    a thin tree.
 Three-quarters cover: Grants +5 bonus to AC and Dexterity saves. Includes
    arrow slits and tree trunks.
-Total cover: Can't be targetted directly by an attack or spell. Must be
-   completely concealled.
+Total cover: Can't be targeted directly by an attack or spell. Must be
+   completely concealed.
 """
 
 IDEALS = ['Avoids hurting the poor', 'Beauty is truth', 'Believes they have a destiny to fulfill', 
@@ -240,13 +240,13 @@ IDEALS = ['Avoids hurting the poor', 'Beauty is truth', 'Believes they have a de
 	'The world changes and we must adapt to the changes', 'To thine own self be true', 'Values bold action', 
 	'Values creativity', 'Works for the redemption of others']
 
-NO = ('false', '0', 'no', 'f', 'n', 'nyet')
+NO = ('false', '0', 'no', 'f', 'off', 'n', 'nyet')
 
 STRONG_WIND = """
 WARNING: Ranged attacks and hearing perception checks are at disadvantage. Open
    flames are extinguished, fog is dispersed, natural flight is impossible. All
    flying creatures must land at the end of their turn or fall. Consider the 
-   possibility of sandstorms or tornados. Sandstorms give disadvantage to sight
+   possibility of sandstorms or tornadoes. Sandstorms give disadvantage to sight
    perception checks.
 """
 
@@ -259,15 +259,15 @@ TRAITS = ['Absent minded', 'Always has a backup plan', 'Always helps those in tr
 	'Egalitarian', 'Fashionista', 'Fiddles with things constantly', 'Flatterer', 'Follows their gut', 
 	'Food insecurity', 'Frugal', 'Gets bored easily', 'Good a mediating disputes', 
 	'Gravitates toward complicated solutions', 'Habitually nervous', 'Has no time for wealth or manners', 
-	'Hides when nervous', 'Idolizes a religous figure', 'Incredibly tolerant', 
+	'Hides when nervous', 'Idolizes a religious figure', 'Incredibly tolerant', 
 	'Isolated, not used to dealing with people', 'Kind hearted', 'Logical and rational', 
 	'Loves a good mystery', 'Loves gossip', 'Mercurial, changes moods constantly', 
-	'Never tell me the odds', 'Oblivious to ettiquette and fashion', 'Opportunistically religious', 
+	'Never tell me the odds', 'Oblivious to etiquette and fashion', 'Opportunistically religious', 
 	'Perfectionist', 'Prefers animals to people', 'Prefers doing to thinking', 'Polite and respectful', 
 	'Possessed by wanderlust', 'Rarely speaks', 'Refuses to depend on others', 'Reliable', 
 	'Scruffy looking', 'Socially awkward', 'Superstitious, constantly sees omens', 'Talks a lot',
-	'Unshakeable optimism', 'Uses big words', 'Very empathetic', 'Very friendly', 'Very generous', 
+	'Unshakable optimism', 'Uses big words', 'Very empathetic', 'Very friendly', 'Very generous', 
 	'Very used to fine living', 'Wants to be the center of attention', 'Wants to know how things work', 
 	'Work hard, play hard']
 
-YES = ('true', '1', 'yes', 't', 'y', 'da')
+YES = ('true', '1', 'yes', 'on', 't', 'y', 'da')

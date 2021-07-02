@@ -142,7 +142,7 @@ Any line that starts with three asterisks (`***`) or two asterisks and an unknow
 
 #### Multi-Line Paragraphs
 
-If a feature has mutliple lines (paragraphs) explaining it, the parser will correctly put those lines together as long as the following lines do not start with asterisks.
+If a feature has multiple lines (paragraphs) explaining it, the parser will correctly put those lines together as long as the following lines do not start with asterisks.
 
 ### Actions vs. Attacks
 
@@ -156,11 +156,11 @@ The attack bonus is assumed to be the first word after the first instance of `At
 
 If there are multiple damages, the will all be added together, but specified differently. Something like 'Hit (15 + 9) for 16 points; 6 points of piercing damage, 10 points of necrotic damage'. However, if the word 'or' is in the hit text, the lower damage is given before the break down. This is common for versatile weapons, which give different damage one-handed versus two-handed. Those attack will read like 'Hit (18 + 4) for 3 points; 4 points of slashing damage or 3 points of slashing damage'. You will need to have some understanding of the attack, and possibly adjust the damage as needed. An alternative when making homebrew creatures or NPC stat blocks is to split versatile weapons into two attacks.
 
-Anything after the hit text is saved as additional hit effects, like needing to save after a successful unamred strike from a wight. Note that if the hit text has no damage rolls, it is put in the additional effects as well. This is common with spell attacks.
+Anything after the hit text is saved as additional hit effects, like needing to save after a successful unarmed strike from a wight. Note that if the hit text has no damage rolls, it is put in the additional effects as well. This is common with spell attacks.
 
 ### Reactions and Legendary Actions
 
-Two other special headers are recognized by Egor: 'Reactions' and 'Legendary Actions'. These are handled similarly, but slightly differently. Reactions are lines starting with three asterisks (`***`) and legendary actions are lines starting with two asterisks (`**`). As with features, whatever is emphasized is taken as the name, and the rest of the text is the description. Lines starting without the required number of asterisks are further expanation of the previous reaction/legendary effect.
+Two other special headers are recognized by Egor: 'Reactions' and 'Legendary Actions'. These are handled similarly, but slightly differently. Reactions are lines starting with three asterisks (`***`) and legendary actions are lines starting with two asterisks (`**`). As with features, whatever is emphasized is taken as the name, and the rest of the text is the description. Lines starting without the required number of asterisks are further explanation of the previous reaction/legendary effect.
 
 Again, this is rather arbitrary and picky. It's based off the markdown SRD I am using. For campaign files I would like it to be more general, just emphasized text at the start of a line, including using the alternate markdown syntax of underscores instead of asterisks. That is also on the list.
 
@@ -172,7 +172,7 @@ When Egor scans the campaign files, the stat blocks are stored in his 'zoo' of c
 
 Egor has a name command that can generate random names for different combinations of species/culture and gender. If you have a campaign file titled 'Names' or 'names' (not counting the leading number or the extension, so '12.names.md' counts), that will be read as a specification for generating these random names.
 
-Each species or culture should have a second level header (two octothorpes/`##`) that gives the name of the culture. The text under that header should have lines starting with text emphasized by two asterisks (`**`). The emphasized text is the name of a name part. After the emphasized text should be a comma separated list of possible names for that name part. Both the species/cultures and name parts should be single words or hypenated words ('Orc' or 'Half-Elf').
+Each species or culture should have a second level header (two octothorpes/`##`) that gives the name of the culture. The text under that header should have lines starting with text emphasized by two asterisks (`**`). The emphasized text is the name of a name part. After the emphasized text should be a comma separated list of possible names for that name part. Both the species/cultures and name parts should be single words or hyphenated words ('Orc' or 'Half-Elf').
 
 After the name parts are specified, there should be a series of level three headers (three octothorpes/`###`). These are the 'genders'. As with the cultures, species, and name parts, these should be single words or hyphenated words. I put genders in quotes because the names you are creating may not be categorized by gender, but by something else like occupation. I just call the second level of categorization gender for convenience.
 
@@ -190,7 +190,7 @@ A gender can have more than one name format. Each one should be listed on a sepa
 [70] {female} {clan}
 ```
 
-This gives a thiry percent chance that wome will have a descriptive clan name using a random noun and adjective, and a seventy percent chance that they will have a standard clan name. Note that here you have a female name part, and a female gender. That is fine, Egor can keep track of them separately.
+This gives a thirty percent chance that women will have a descriptive clan name using a random noun and adjective, and a seventy percent chance that they will have a standard clan name. Note that here you have a female name part, and a female gender. That is fine, Egor can keep track of them separately.
 
 Only use the same name part twice if you want it to repeat. For example, say you want a patronymic (a name based on the father's name). You might think to try '{male} {clan}, son of {male}'. However, the way Egor works, the patronymic will always be the same as the first name. To fix this, just copy the list of male names, and make another name part called 'father'. Then '{male} {clan}, son of {father}' will (generally) give a different name for the patronymic.
 
@@ -202,7 +202,7 @@ Egor has some support for calendars in addition to basic time-in-the-dungeon. If
 
 Egor supports two types of calendars: fractional calendars and deviation calendars. Both have a list of months, which can have different numbers of days in them. 
 
-A fractional calendar has a fractional year length and an overage month. That year length keeps getting added up, and when the fractional part first exceeds 0.5, a day is added to the overage month. Say you have a year lenght of 365.2422. The first year you have 365.2422. 0.2422 is under 0.5, so no extra day. The second year you add again, 730.4844. The third year you have 1095.7266. Now you are over 0.5, so an extra day is added to the overage month. Note that the fourth year total is 1460.9688. That is also over 0.5, but Egor knows the overage day has already been added, and waits for the fractional part to cycle past 0.0 again.
+A fractional calendar has a fractional year length and an overage month. That year length keeps getting added up, and when the fractional part first exceeds 0.5, a day is added to the overage month. Say you have a year length of 365.2422. The first year you have 365.2422. 0.2422 is under 0.5, so no extra day. The second year you add again, 730.4844. The third year you have 1095.7266. Now you are over 0.5, so an extra day is added to the overage month. Note that the fourth year total is 1460.9688. That is also over 0.5, but Egor knows the overage day has already been added, and waits for the fractional part to cycle past 0.0 again.
 
 A deviation calendar has an integer year length and a set of deviations. Each deviation is based on a modulus of the year. So you might have a 365 day year month, and a deviation that says if the year modulus 4 is 0, add an extra day to the second month. You can have multiple deviations, and they can undo each other. So you might have a second deviation say that if they year modulus 100 is 0, set the second month to the normal number of days. This is (partially) how the Gregorian calendar works.
 
@@ -296,7 +296,7 @@ Fractional cycles are specified with a line starting with **period length**, tha
 
 #### Static Cycles
 
-Statics cycles don't change. Each period has a set number of days and that never changes. This is for things like weeks, where each weekday is a period, with a length of one day.
+Static cycles don't change. Each period has a set number of days and that never changes. This is for things like weeks, where each weekday is a period, with a length of one day.
 
 To specify a static cycle, just give a pipe table where the first column is the name of the period, and the second column is the number of days in the period. For example:
 
@@ -336,4 +336,4 @@ Each cycle has a name, taken from the header node that starts the cycle definiti
 - name-period: The name of the current period within the cycle.
 - name-period-day: The number of the day within the current period.
 
-As an example, the format '{fatangdays-period}, {day-of-month} {month-name}, day {moons-period-day} of the {monns-period} moon.' might come out as 'Godsday, 8 Early Winter, day 25 of the Skeleton moon.'
+As an example, the format '{fatangdays-period}, {day-of-month} {month-name}, day {moons-period-day} of the {moons-period} moon.' might come out as 'Godsday, 8 Early Winter, day 25 of the Skeleton moon.'

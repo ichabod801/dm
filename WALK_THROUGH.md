@@ -222,9 +222,9 @@ Hit (12 + 5) for 4 points of slashing damage
 
 Note that in this case, you need to put the hyphen into claw-claw. Commands with multiple arguments generally parse using spaces, so the dash clarifies that claw-claw is one thing, the name of a PC.
 
-Egor tells us the roll and the attack bonus, and the damage with the damage type. It also tells us the remaining hit points for the target. If the attack had missed, it would still tell us the attack roll and bonus, unless it was a fumble. It will also calculate the damage on a critical hit. You can also specify an attack having advantage/disadvantage or a sitational bonus. You can find the details with 'help attack'.
+Egor tells us the roll and the attack bonus, and the damage with the damage type. It also tells us the remaining hit points for the target. If the attack had missed, it would still tell us the attack roll and bonus, unless it was a fumble. It will also calculate the damage on a critical hit. You can also specify an attack having advantage/disadvantage or a situational bonus. You can find the details with 'help attack'.
 
-The first problem is that typing `attack claw-claw greataxe` is going to get old fast, especially when trying to run a quick combat. Many of the commands have aliases to make them easier to type. You can find them in the help text for the command, in parentheses after the first line. So we can find that the alias for the attack command is '@'. Next, combatants can be refered to by their place in the initiative order. So instead of 'claw-claw', we could just use '1'. Finally, you'll note that the attacks for a creature have letters before them. You can use these to reference the attacks. So `attack claw-claw greataxe` can be written as `@ 1 a`, which is much easier to type. Also, the 'A' attack for a creature is considered to be the default. So you could write it as `@ 1`. Note that if you are specifying (dis)advantage or a situational bonus, you have to specify the attack.
+The first problem is that typing `attack claw-claw greataxe` is going to get old fast, especially when trying to run a quick combat. Many of the commands have aliases to make them easier to type. You can find them in the help text for the command, in parentheses after the first line. So we can find that the alias for the attack command is '@'. Next, combatants can be referred to by their place in the initiative order. So instead of 'claw-claw', we could just use '1'. Finally, you'll note that the attacks for a creature have letters before them. You can use these to reference the attacks. So `attack claw-claw greataxe` can be written as `@ 1 a`, which is much easier to type. Also, the 'A' attack for a creature is considered to be the default. So you could write it as `@ 1`. Note that if you are specifying (dis)advantage or a situational bonus, you have to specify the attack.
 
 The second problem comes when Claw Claw's player says "I'm blade singing right now. Did you take into account my +3 int bonus to AC?" No, actually we didn't. And we can see from the attack text that it wouldn't have hit (12 + 5 < 18). Now, as noted, we could use a situational bonus here, and do the attack as `@ 1 a -3`. But that's a pain, and we need to undo the 4 points of damage.
 
@@ -341,7 +341,7 @@ The temperature ranges from a low of 70F to a high of 83F.
 There is little to no wind today.
 There is heavy rain today.
 WARNING: An area with heavy precipitation is lightly obscured, and sight
-   preception checks are at disadvantage. If it is raining, hearing
+   perception checks are at disadvantage. If it is raining, hearing
    perception checks are also at disadvantage. Heavy rain also extinguishes
    open flames.
 ```

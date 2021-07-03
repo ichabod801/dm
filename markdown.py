@@ -3,17 +3,12 @@ srd.py
 
 Functions for reading the D&D SRD in markdown format.
 
-EMPHASIS_REGEX: A regex matching emphasized text in markdown. (Pattern)
-
 Classes:
 Node: A node in a document tree. (object)
 HeaderNode: A header in a document tree. (object)
 TextNode: A section of text in a document tree. (object)
 SRD: A collection of information from the SRD. (object)
 Table: A rollable table in a markdown document. (object)
-
-Functions:
-get_lead: Get any leading emphasized text in a string. (str)
 """
 
 import collections
@@ -24,8 +19,6 @@ import re
 from . import creature
 from . import dice
 from . import gtime
-
-EMPHASIS_REGEX = re.compile(r'(?P<em>\*{1,3}|_{1,3})([^\*_]+?)(?P=em)')
 
 class Node(object):
 	"""
@@ -540,16 +533,6 @@ class Table(object):
 			if low <= value <= high:
 				break
 		return result
-
-def get_lead(text):
-	"""
-	Get any leading emphasized text in a string. (str)
-
-	Parameters:
-	text: The text to extract a lead from. (str)
-	"""
-	match = EMPHASIS_REGEX.match(text)
-	return match.group(2) if match is not None else ''
 
 if __name__ == '__main__':
 	srd = SRD()

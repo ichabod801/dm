@@ -3,6 +3,9 @@ creature.py
 
 Creatures for combat and information.
 
+Constants:
+EMPHASIS_REGEX: A regex matching emphasized text in markdown. (Pattern)
+
 Classes:
 Attack: An attack used by a creature. (object)
 Creature: A creature for combat or information. (object)
@@ -13,6 +16,8 @@ import collections
 import re
 
 from . import dice
+
+EMPHASIS_REGEX = re.compile(r'(?P<em>\*{1,3}|_{1,3})([^\*_]+?)(?P=em)')
 
 class Attack(object):
 	"""
@@ -469,22 +474,20 @@ class Creature(object):
 			# Check for the starting size line.
 			elif line[:5] in self.sizes:
 				self._parse_size(line)
-			# Check for non-standard features.
-			elif line.startswith('***'):
-				blank, title, text = line.split('***')
-				last_dict, last_key = self._parse_feature(title, text)
-			# Check for standard features.
-			elif line.startswith('**'):
-				blank, title, text = line.split('**')
-				last = getattr(self, self.two_stars.get(title, '_parse_feature'))(title, text)
-				if last is not None:
-					last_dict, last_key = last
 			# Check for starting to check for abilities.
 			elif line.startswith('| STR'):
 				abilities = True
-			# Append loose paragraphs to the last feature found.
-			elif line.strip():
-				last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+			else:
+				# Check for a line starting with emphasized text.
+				match = EMPHASIS_REGEX.match(line)
+				if match:
+					blank, title, text = line.split(match.group(1))
+					last = getattr(self, self.two_stars.get(title, '_parse_feature'))(title, text)
+					if last is not None:
+						last_dict, last_key = last
+				# Append loose paragraphs to the last feature found.
+				elif line.strip():
+					last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
 
 	def _parse_reaction(self, line):
 		"""

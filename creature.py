@@ -330,15 +330,15 @@ class Creature(object):
 		self.ac = int(parts[0])
 		self.ac_text = parts[1] if len(parts) > 1 else ''
 
-	def _parse_action(self, line):
+	def _parse_action(self, name, text):
 		"""
 		Parse one of the creature's actions. (None)
 
 		Parameters:
-		line: The line of text with an action. (str)
+		name: The emphasized text at the start of the line. (str)
+		text: The rest of the text on the line. (str)
 		"""
-		blank, name, text = line.split('***')
-		if 'Attack:*' in line:
+		if 'Attack:*' in text:
 			self.attacks[name] = Attack(name, text[1:].strip())
 			return self.attacks, name
 		else:
@@ -380,9 +380,11 @@ class Creature(object):
 		if node.name.strip() == 'Actions':
 			for child in node.children:
 				for line in child.lines:
+					match = EMPHASIS_REGEX.match(line)
 					# Handle named actions.
-					if line.startswith('***'):
-						last_dict, last_key = self._parse_action(line)
+					if match:
+						blank, name, text = line.split(match.group(1), 2)
+						last_dict, last_key = self._parse_action(name, text)
 					# Add unnamed actions to the last action.
 					elif line.strip():
 						if self.name_regex.search(line):
@@ -398,9 +400,11 @@ class Creature(object):
 		if node.name == 'Reactions':
 			for child in node.children:
 				for line in child.lines:
+					match = EMPHASIS_REGEX.match(line)
 					# Handle named actions.
-					if line.startswith('***'):
-						last_dict, last_key = self._parse_reaction(line)
+					if match:
+						blank, name, text = line.split(match.group(1), 2)
+						last_dict, last_key = self._parse_reaction(name, text)
 					# Add unnamed actions to the last action.
 					elif line.strip():
 						if last_dict == self.reactions:
@@ -412,9 +416,11 @@ class Creature(object):
 			last_key = ''
 			for child in node.children:
 				for line in child.lines:
-					# Check for the legendary actions.
-					if line.startswith('**'):
-						last_key = self._parse_legendary(line)
+					match = EMPHASIS_REGEX.match(line)
+					# Handle named actions.
+					if match:
+						blank, name, text = line.split(match.group(1), 2)
+						last_key = self._parse_legendary(name, text)
 					# Check for loose paragraphs.
 					elif line.strip():
 						# Add to previous legendary actions.
@@ -451,14 +457,14 @@ class Creature(object):
 		"""
 		self.languages = text.strip()
 
-	def _parse_legendary(self, line):
+	def _parse_legendary(self, name, text):
 		"""
 		Parse one of the creature's legendary actions. (str)
 
 		Parameters:
-		line: The line of text with a legendary action. (str)
+		name: The emphasized text at the start of the line. (str)
+		text: The rest of the text on the line. (str)
 		"""
-		blank, name, text = line.split('**')
 		self.legendary[name] = text[1:].strip()
 		return name
 
@@ -489,14 +495,14 @@ class Creature(object):
 				elif line.strip():
 					last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
 
-	def _parse_reaction(self, line):
+	def _parse_reaction(self, name, text):
 		"""
 		Parse one of the creature's actions. (None)
 
 		Parameters:
-		line: The line of text with an action. (str)
+		name: The emphasized text at the start of the line. (str)
+		text: The rest of the text on the line. (str)
 		"""
-		blank, name, text = line.split('***')
 		self.reactions[name] = text[1:].strip()
 		return self.reactions, name
 

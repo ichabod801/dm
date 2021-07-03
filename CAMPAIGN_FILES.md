@@ -53,7 +53,7 @@ Plain searches search for an exact match with a header. Searches starting with a
 
 ## Homebrew Monsters
 
-If you have created any homebrew monsters you can put stat blocks for them in the campaign files. The parser I have is pretty picky, and I want to work on that, but for the mean time you need to be careful with the formatting. Generally, you can just copy from the SRD files and modify the text. If you run into problems, check this section for details that the parser looks for.
+If you have created any homebrew monsters you can put stat blocks for them in the campaign files. Generally, you can just copy from the SRD files and modify the text. If you run into problems, check this section for details that the parser looks for.
 
 Every chapter file is searched for stat blocks. Any that are found are added to the list of creatures available for combat in the Egor system. The exception is any chapter whose top level header (the single '#' header at the start of the file) is 'Player Characters'. Egor loads those into the player character tracking.
 
@@ -148,7 +148,7 @@ If a feature has multiple lines (paragraphs) explaining it, the parser will corr
 
 ### Actions vs. Attacks
 
-After a header named 'Actions', every line starting with three asterisks (`***`) is parsed as an action or an attack. If the line contains `Attack*`, Egor attempts to parse it as an attack (see below). Otherwise, it is copied into the creatures actions.
+After a header named 'Actions', every line with a lead is parsed as an action or an attack. If the text after the lead contains `Attack*`, Egor attempts to parse it as an attack (see below). Otherwise, it is copied into the creatures actions.
 
 #### Attacks
 
@@ -162,9 +162,9 @@ Anything after the hit text is saved as additional hit effects, like needing to 
 
 ### Reactions and Legendary Actions
 
-Two other special headers are recognized by Egor: 'Reactions' and 'Legendary Actions'. These are handled similarly, but slightly differently. Reactions are lines starting with three asterisks (`***`) and legendary actions are lines starting with two asterisks (`**`). As with features, whatever is emphasized is taken as the name, and the rest of the text is the description. Lines starting without the required number of asterisks are further explanation of the previous reaction/legendary effect.
+Two other special headers are recognized by Egor: 'Reactions' and 'Legendary Actions'. These are handled pretty much the same, with the lead of the line being the name of the reaction or legendary action, and the rest of the text being the description. As with features, whatever is emphasized is taken as the name, and the rest of the text is the description. Lines starting without emphasized are treated as further explanation of the previous reaction/legendary effect.
 
-Again, this is rather arbitrary and picky. It's based off the markdown SRD I am using. For campaign files I would like it to be more general, just emphasized text at the start of a line, including using the alternate markdown syntax of underscores instead of asterisks. That is also on the list.
+The parsing of legendary actions does one thing different. It is assumed that there is a line of text at the start of the legendary actions section that describes how many and when the creature can take legendary actions. This line should not have a lead.
 
 ## Player Characters
 

@@ -94,21 +94,23 @@ damage.
 *Hit:* 6 (1d6+3) piercing damage.
 ```
 
+Something that is very important to the parsing of creatures is bold and italics in markdown. Egor looks for something that is bold and/or italics at the beginning of a line. For example, the second line of the orc description starts with `**Armor Class**`. Egor sees the bold text 'Armor Class' at the start of the line, and processes that as the armor class information. In the text below, the 'lead' of a line is any text at the beginning of the line that is bold and/or italics.
+
 ### Detecting the Stat Block
 
 The parser searches for headers that are followed by a line starting with a size. It only checks headers of less than sixth level (less than six '#'s). The text for the line following the header needs to start with `*Tiny`, `*Small`, `*Medium`, `*Large`, `*Huge`, or `*Gargantuan`. The size line should also have a creature type after the size, a comma, and then an alignment.
 
 ### Armor Class
 
-The line with armor class needs to start with two asterisks (`**`). The first word after `**Armor Class**` should be an integer of the armor class. All other words after that are assumed to be describing the armor worn.
+The line with the AC information needs to have the lead 'Armor Class'. The first word after the lead should be an integer of the armor class. All other words after that are assumed to be describing the armor worn.
 
 ### Hit Points
 
-The line with hit points needs to start with two asterisks (`**`). The first word after `**Hit Points**` should be the average hit points for the creature, or the max hit points for a player character. This should be followed by a space and a description of the hit dice in parentheses. This should be identifiable as a dice roll to Egor, as he will use it to roll hit points for creatures in combat.
+The line with hit points needs to have the lead 'Hit Points'. The first word after the lead should be the average hit points for the creature, or the max hit points for a player character. This should be followed by a space and a description of the hit dice in parentheses. This should be identifiable as a dice roll to Egor, as he will use it to roll hit points for creatures in combat.
 
 ### Speed
 
-The line with the creature's speed needs to start with two asterisks (`**`). The first word after `**Speed**` should be the integer ground speed of the creature. This is typically followed by ' ft.', but that is not necessary. If there is a comma after that, anything after the comma is assumed to be alternate speeds for the creature, such as climb, swim, or fly speeds.
+The line with the creature's speed needs to have the lead 'Speed'. The first word after the lead should be the integer ground speed of the creature. This is typically followed by ' ft.', but that is not necessary. If there is a comma after that, anything after the comma is assumed to be alternate speeds for the creature, such as climb, swim, or fly speeds.
 
 ### Abilities
 
@@ -116,29 +118,29 @@ Abilities have to be done in a pipe table. Specifically, the parser looks for '|
 
 ### Skills
 
-The line with skills needs to start with `**Skills**`. The text after `**Skills**` should be skills with bonuses, each pair separated by a comma (like 'Sleight of Hand +5, Stealth +5'). Incorrect skill names will be entered into the creature's data incorrectly, and will not be usable by the skill command.
+The line with skills needs have the lead 'Skills'. The text after the lead should be skills with bonuses, each pair separated by a comma (like 'Sleight of Hand +5, Stealth +5'). Incorrect skill names will be entered into the creature's data incorrectly, and will not be usable by the skill command.
 
 ### Saves
 
-The line with skills needs to start with `**Saves**`. The text after `**Saves**` should be saves (using three letter ability names) with bonuses, each pair separated by a comma (like 'Str +8, Wis +1'). Incorrect ability names will be entered into the creature's data incorrectly, and will not be usable by the save command.
+The line with skills needs to have the lead 'Saves'. The text after the lead should be saves (using three letter ability names) with bonuses, each pair separated by a comma (like 'Str +8, Wis +1'). Incorrect ability names will be entered into the creature's data incorrectly, and will not be usable by the save command.
 
 ### Senses
 
-The line with senses needs to start with `**Senses**`. However, no processing is done on this line, it is just copied into the creature's data.
+The line with senses needs to have the lead 'Senses'. However, no processing is done on this line, it is just copied into the creature's data.
 
 ### Languages
 
-The line with languages needs to start with `**Languages**`. However, no processing is done on this line, it is just copied into the creature's data.
+The line with languages needs to have the lead 'Languages'. However, no processing is done on this line, it is just copied into the creature's data.
 
 ### Challenge Rating
 
-The line with the challenge rating and experience points needs to start with `**Challenge**`. Egor can read fractional challenge ratings (like the orc's 1/2), but stat blocks may print strangely if you use a fractional CR without a 1 for a numerator. The experience points for the creature should be the second word in parentheses after the challenge rating. While commas normally mess up Egor's reading of integers, they can be used here.
+The line with the challenge rating and experience points needs to have the lead 'Challenge'. Egor can read fractional challenge ratings (like the orc's 1/2), but stat blocks may print strangely if you use a fractional CR without a 1 for a numerator. The experience points for the creature should be the second word, in parentheses after the challenge rating. While commas normally mess up Egor's reading of integers, they can be used here.
 
 Note that Egor ignores the challenge rating, it is not used by any of the commands (at the moment). The experience points are totaled up for creatures who are killed in combat, either through auto-kill at 0 hp or with the kill command. The total can be accessed with the xp command.
 
 ### Other Features
 
-Any line that starts with three asterisks (`***`) or two asterisks and an unknown name (not one of the ones listed above) is just stored as a feature of that creature. The text emphasized by the asterisks is assumed to be the name of the feature, and the rest of the text is stored as the description of the features. If you have two features with the same name, the second one will overwrite the first.
+Any other line with a lead is just stored as a feature of that creature. The lead is assumed to be the name of the feature, and the rest of the text is stored as the description of the features. If you have two features with the same name, the second one will overwrite the first.
 
 #### Multi-Line Paragraphs
 

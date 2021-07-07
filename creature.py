@@ -799,7 +799,7 @@ class Creature(object):
 		if self.cr >= 1:
 			lines.append(f'**Challenge** {self.cr} ({self.xp} XP)')
 		elif self.cr:
-			denom = round(1 / self.cr, 0)
+			denom = int(round(1 / self.cr, 0))
 			lines.append(f'**Challenge** 1/{denom} ({self.xp} XP)')
 		for name, text in self.features.items():
 			text = text.replace('\n\n', '\n    ')

@@ -318,8 +318,11 @@ class SRD(object):
 			if node.level < 5 and node.children:
 				intro = node.children[0]
 				if isinstance(intro, TextNode) and intro.lines[0][:5] in creature.Creature.sizes:
-					monster = creature.Creature(node)
-					target[monster.name.lower().replace(' ', '-')] = monster
+					try:
+						monster = creature.Creature(node)
+						target[monster.name.lower().replace(' ', '-')] = monster
+					except:
+						print(f'Error parsing creature {node.name}.')
 				elif node.level < 4:
 					search.extend([kid for kid in node.children if isinstance(kid, HeaderNode)])
 

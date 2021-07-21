@@ -10,6 +10,7 @@ Classes:
 Attack: An attack used by a creature. (object)
 Creature: A creature for combat or information. (object)
 DummyNode: A fake header node for creating blank creatures. (namedtuple)
+ParsingError: A custom error from parsing problems. (Exception)
 """
 
 import collections
@@ -283,7 +284,10 @@ class Creature(object):
 			if hasattr(node, 'lines'):  # if it has lines then it is a TextNode (avoids circular import)
 				self._parse_lines(node)
 			else:
-				self._parse_header(node)
+				try:
+					self._parse_header(node)
+				except:
+					raise ParsingError(f'Error parsing {self.name} in header {node.name!r}.')
 
 	def __repr__(self):
 		"""Debugging text representation. (str)"""
@@ -472,28 +476,32 @@ class Creature(object):
 		"""Parse the lines of a text node. (None)"""
 		abilities = False
 		for line in node.lines:
-			# Check for abilities.
-			if abilities:
-				if line[1] != '-':
-					self._parse_abilities(line)
-					abilities = False
-			# Check for the starting size line.
-			elif line[:5] in self.sizes:
-				self._parse_size(line)
-			# Check for starting to check for abilities.
-			elif line.startswith('| STR'):
-				abilities = True
-			else:
-				# Check for a line starting with emphasized text.
-				match = EMPHASIS_REGEX.match(line)
-				if match:
-					blank, title, text = line.split(match.group(1))
-					last = getattr(self, self.two_stars.get(title, '_parse_feature'))(title, text)
-					if last is not None:
-						last_dict, last_key = last
-				# Append loose paragraphs to the last feature found.
-				elif line.strip():
-					last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+			try:
+				# Check for abilities.
+				if abilities:
+					if line[1] != '-':
+						self._parse_abilities(line)
+						abilities = False
+				# Check for the starting size line.
+				elif line[:5] in self.sizes:
+					self._parse_size(line)
+				# Check for starting to check for abilities.
+				elif line.startswith('| STR'):
+					abilities = True
+				else:
+					# Check for a line starting with emphasized text.
+					match = EMPHASIS_REGEX.match(line)
+					if match:
+						blank, title, text = line.split(match.group(1))
+						last = getattr(self, self.two_stars.get(title, '_parse_feature'))(title, text)
+						if last is not None:
+							last_dict, last_key = last
+					# Append loose paragraphs to the last feature found.
+					elif line.strip():
+						last_dict[last_key] = '{}\n\n{}'.format(last_dict[last_key], line)
+			except:
+				words = ' '.join(line.split()[:3])
+				raise ParsingError(f'Error parsing {self.name} on line starting with {words!r}.')
 
 	def _parse_reaction(self, name, text):
 		"""
@@ -839,3 +847,7 @@ class Creature(object):
 
 # A fake header node for creating blank creatures.
 DummyNode = collections.namedtuple('DummyNode', ('name', 'children'))
+
+class ParsingError(Exception):
+	"""A custom error from parsing problems. (Exception)"""
+	pass

@@ -321,8 +321,8 @@ class SRD(object):
 					try:
 						monster = creature.Creature(node)
 						target[monster.name.lower().replace(' ', '-')] = monster
-					except:
-						print(f'Error parsing creature {node.name}.')
+					except creature.ParsingError as err:
+						print(repr(err))
 				elif node.level < 4:
 					search.extend([kid for kid in node.children if isinstance(kid, HeaderNode)])
 

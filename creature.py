@@ -68,8 +68,12 @@ class Attack(object):
 		attack = self.text.index('Attack:*') + 8
 		bonus_word = self.text[attack:].split()[0]
 		self.bonus = int(bonus_word.strip('+'))
+		# Get the range or reach.
+		comma = self.text.index(',', attack) + 1
+		hit = self.text.index('*Hit:*')
+		self.range = self.text[comma:hit].strip(' .')
 		# Parse the hit text.
-		hit = self.text.index('*Hit:* ') + 6
+		hit += 6
 		period = self.text.index('.', hit)
 		hit_text = self.text[hit:period]
 		self.damage = []
@@ -100,7 +104,7 @@ class Attack(object):
 		return f'<Attack {self.name} {self.bonus} {damage_text}{space}{more_text}>'
 
 	def __str__(self):
-		"""Debugging text representation. (str)"""
+		"""Human readable text representation. (str)"""
 		plus = '+' if self.bonus > -1 else ''
 		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
 		if self.or_damage:
@@ -108,7 +112,7 @@ class Attack(object):
 		else:
 			damage_text = ', '.join(damage_bits)
 		more_text = ' and more' if self.additional else ''
-		return f'{self.name}, {plus}{self.bonus} to hit, {damage_text}{more_text}'
+		return f'{self.name}, {plus}{self.bonus} to hit, {self.range}, {damage_text}{more_text}'
 
 	def add_text(self, text):
 		"""

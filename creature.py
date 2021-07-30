@@ -34,6 +34,7 @@ class Attack(object):
 	melee: A flag for the attack being a melee attack. (bool)
 	name: The name of the attack. (str)
 	or_damage: The damage is alternatives, not combined. (bool)
+	range: The range and/or reach for the attack. (str)
 	ranged: A flag for the attack being a ranged attack. (bool)
 	text: The text describing the attack. (str)
 	spell: A flag for the attack being a spell attack. (bool)

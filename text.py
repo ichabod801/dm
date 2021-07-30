@@ -158,7 +158,8 @@ creatures and player characters loaded from the SRD and your campaign files.
 The next command can be used to advance the initiative count. The kill command
 removes creatures from the initiative count. The heal, hit, and hp commands
 can be use to manage the hit points of creatures. The attack command handles
-an attack from the current creature on another creature.
+an attack from the current creature on another creature. The opportunity
+command handles attacks from any creature to any other creature.
 
 The encounter command can be used to set up combats ahead of time. There are
 ways you can use this for random encounters.

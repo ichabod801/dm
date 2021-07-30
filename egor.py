@@ -74,6 +74,7 @@ class Egor(cmd.Cmd):
 	do_next: Show the next person in the initiative queue. (None)
 	do_note: Record a note. (None)
 	do_npc: Creates a full random NPC. (None)
+	do_opportunity: Have the one combatant attack another one. (None)
 	do_pc: Add or remove a player character. (None)
 	do_personality: Generate a random personality. (None)
 	do_quit: Exit the Egor interface. (True)
@@ -111,8 +112,8 @@ class Egor(cmd.Cmd):
 	"""
 
 	aliases = {'@': 'attack', '@@': 'autoattack', '&': 'note', '*': 'repeat', 'auto': 'autoattack', 
-		'camp': 'campaign', 'con': 'condition', 'init': 'initiative', 'n': 'next', 'q': 'quit', 
-		'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
+		'camp': 'campaign', 'con': 'condition', 'init': 'initiative', 'n': 'next', 'op': 'opportunity', 
+		'q': 'quit', 'r': 'roll', 't': 'time', 'uncon': 'uncondition'}
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {'conditions': text.HELP_CONDITIONS, 'cover': text.HELP_SIGHT, 'help': text.HELP_GENERAL, 
 		'sight': text.HELP_SIGHT}
@@ -261,7 +262,7 @@ class Egor(cmd.Cmd):
 			# Update the user.
 			print(f'Alarm set for {alarm.trigger}.')
 
-	def do_attack(self, arguments):
+	def do_attack(self, arguments, attacker = None):
 		"""
 		Have the current combatant attack another one. (@)
 
@@ -292,7 +293,8 @@ class Egor(cmd.Cmd):
 				bonus = int(check)
 		# Get the creatures involved in the attack.
 		target = self.get_creature(target, 'combat')
-		attacker = self.init[self.init_count]
+		if attacker is None:
+			attacker = self.init[self.init_count]
 		# Make the attack
 		try:
 			total, text = attacker.attack(target, attack, advantage, bonus)
@@ -711,6 +713,28 @@ class Egor(cmd.Cmd):
 		print(gender, culture, random.choice(text.CLASSES))
 		print()
 		self.do_personality('')
+
+	def do_opportunity(self, arguments):
+		"""
+		Have the one combatant attack another one. (op)
+
+		The first three arguments must be the name of the attacker, the name of the 
+		target, and the name of the attack. The attacker and the target may be 
+		identified by their number in the initiative order. The attack may be 
+		identified by it's letter in the creature's attack section. If no attack is 
+		specified, the creature's first attack will be used. If any optional arguments 
+		are used, the attack used must be specified.
+
+		Advantage or disadvantage for the attack may be given by 'ad', 'advantage',
+		'dis', or 'disadvantage' as an optional argument. Any numeric optional 
+		argument will be treated as a temporary bonus or penalty to the attack roll.
+
+		This is basically the attack command, with the added first argument to identify
+		the attacker. 
+		"""
+		words = arguments.split()
+		attacker = self.get_creature(words[0], 'open')
+		self.do_attack(' '.join(words[1:]), attacker)
 
 	def do_pc(self, arguments):
 		"""

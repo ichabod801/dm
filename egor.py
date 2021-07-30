@@ -506,10 +506,14 @@ class Egor(cmd.Cmd):
 		Heal a creature.
 
 		The arguments are a creature name or initiative order number, and a number
-		of points of healing for that creature.
+		of points of healing for that creature. A die roll can be used for the points
+		of healing.
 		"""
 		target_id, healing = arguments.split()
 		target = self.get_creature(target_id)
+		if dice.DICE_REGEX.match(healing):
+			healing = dice.roll(healing)
+			print(f'{healing} hp of damage was healed.')
 		target.heal(int(healing))
 		if target.hp_temp:
 			print(self.voice['confirm-hp-temp'].format(target.name, target.hp, target.hp_temp))
@@ -521,12 +525,16 @@ class Egor(cmd.Cmd):
 		Do damage to a creature.
 
 		The arguments are a creature name or initiative order number, and a number
-		of points of damage to do to that creature.
+		of points of damage to do to that creature. A die roll can be used for the
+		points of damage.
 		"""
 		# Parse the arguments.
 		target_id, damage = arguments.split()
 		target = self.get_creature(target_id)
 		# Apply the damage.
+		if dice.DICE_REGEX.match(damage):
+			damage = dice.roll(damage)
+			print(f'{damage} hp of damage was dealt.')
 		target.hit(int(damage))
 		if target.hp_temp:
 			print(self.voice['confirm-hp-temp'].format(target.name, target.hp, target.hp_temp))

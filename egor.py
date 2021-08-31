@@ -1185,7 +1185,7 @@ class Egor(cmd.Cmd):
 			print('\n'.join(names))
 		# Handle unknown tables.
 		else:
-			print(self.voice['error-table'])
+			print(self.voice['error-table'].format(arguments))
 			print(self.voice['more-tables'])
 
 	def do_test(self, arguments):

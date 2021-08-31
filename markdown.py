@@ -432,7 +432,7 @@ class SRD(object):
 						# Find tables by their header.
 						if line.startswith('**Table'):
 							mode = 'table'
-							name = line[7:-2].strip('- \t')
+							name = line[7:-2].strip(':- \t')
 						# Only scan ones with a roll for the first column.
 						elif mode == 'table' and line.startswith('|'):
 							if dice.TIGHT_REGEX.search(line[1:line.index('|', 2)]):

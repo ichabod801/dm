@@ -1072,14 +1072,29 @@ class Egor(cmd.Cmd):
 
 	def do_store(self, arguments):
 		"""Save the current data."""
+		# Save the application data.
 		with open(os.path.join(self.location, 'dm.dat'), 'w') as data_file:
-			# Save the alarms.
-			for alarm in self.alarms:
-				data_file.write('alarm: {}\n'.format(alarm.data()))
 			# Save the on/off settings.
 			for option in self.on_off_options:
 				attr = option.replace('-', '_')
 				data_file.write('{}: {}\n'.format(option, getattr(self, attr)))
+			# Save the loaded campaign, if any.
+			if self.campaign_folder:
+				data_file.write('campaign: {}\n'.format(self.campaign_folder))
+			# Save the system voice.
+			data_file.write('voice: {}\n'.format(self.voice['__name__']))
+		# Determine where the campaign data should be stored.
+		if self.campaign_folder:
+			path = os.path.join(self.location, self.campaign_folder, 'camp.dat')
+			mode = 'w'
+		else:
+			path = os.path.join(self.location, 'dm.dat')
+			mode = 'a'
+		# Store the campaign specific data.
+		with open(path, mode) as data_file:
+			# Save the alarms.
+			for alarm in self.alarms:
+				data_file.write('alarm: {}\n'.format(alarm.data()))
 			# Save the notes with tags (allows deleting notes w/o messing up tags).
 			save_notes = [f'note: {note}' for note in self.notes]
 			for tag, indices in self.tags.items():
@@ -1093,9 +1108,6 @@ class Egor(cmd.Cmd):
 			data_file.write('time: {}\n'.format(self.time.short()))
 			for var, value in self.time_vars.items():
 				data_file.write('time-var: {} {}\n'.format(var, value))
-			# Save the loaded campaign, if any.
-			if self.campaign_folder:
-				data_file.write('campaign: {}\n'.format(self.campaign_folder))
 			# Save any encounters.
 			if self.encounters:
 				for name, bad_guys in self.encounters.items():
@@ -1106,14 +1118,13 @@ class Egor(cmd.Cmd):
 			data_file.write('climate: {}\n'.format(self.climate))
 			data_file.write('season: {}\n'.format(self.season))
 			data_file.write('weather-roll: {}\n'.format(self.weather_roll))
-			# Save the system voice.
-			data_file.write('voice: {}\n'.format(self.voice['__name__']))
 			# Save the experience points.
 			data_file.write('xp: {}\n'.format(self.xp))
 			data_file.write('xp-method: {}\n'.format(self.xp_method))
 			# Save any pc mock ups created in the interface.
 			for pc_data in self.pc_data.values():
 				data_file.write('pc-data: {}\n'.format('; '.join(pc_data)))
+		# Clean up.
 		self.changes = False
 		print(self.voice['confirm-store'])
 
@@ -1469,13 +1480,29 @@ class Egor(cmd.Cmd):
 
 	def load_data(self):
 		"""Load any stored state data. (None)"""
+		# Load the general application data.
 		with open(os.path.join(self.location, 'dm.dat')) as data_file:
+			for line in data_file:
+				tag, data = line.split(':', 1)
+				if tag == 'campaign':
+					self.campaign_folder = data.strip()
+				elif tag == 'voice':
+					self.voice = getattr(voice, data.strip().upper())
+					self.prompt = self.voice['prompt']
+				elif tag in self.on_off_options:
+					attr = tag.replace('-', '_')
+					setattr(self, attr, data.strip() == 'True')
+		# Determine where any campaign data is stored.
+		if self.campaign_folder:
+			path = os.path.join(self.location, self.campaign_folder, 'camp.dat')
+		else:
+			path = os.path.join(self.location, 'dm.dat')
+		# Load the campaign specific data.
+		with open(path) as data_file:
 			for line in data_file:
 				tag, data = line.split(':', 1)
 				if tag == 'alarm':
 					self.alarms.append(gtime.Alarm.from_data(data.strip()))
-				elif tag == 'campaign':
-					self.campaign_folder = data.strip()
 				elif tag == 'climate':
 					self.climate = data.strip()
 				elif tag == 'encounter':
@@ -1499,18 +1526,12 @@ class Egor(cmd.Cmd):
 				elif tag == 'time-var':
 					var, value = data.split()
 					self.time_vars[var] = value
-				elif tag == 'voice':
-					self.voice = getattr(voice, data.strip().upper())
-					self.prompt = self.voice['prompt']
 				elif tag == 'weather-roll':
 					self.weather_roll = data.strip()
 				elif tag == 'xp':
 					self.xp = int(data)
 				elif tag == 'xp-method':
 					self.xp_method = data.strip()
-				elif tag in self.on_off_options:
-					attr = tag.replace('-', '_')
-					setattr(self, attr, data.strip() == 'True')
 
 	def markdown_search(self, arguments, document):
 		"""

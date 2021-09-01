@@ -14,6 +14,7 @@ import os
 import random
 import re
 import textwrap
+import time
 import traceback
 
 from . import creature
@@ -33,6 +34,7 @@ class Egor(cmd.Cmd):
 
 	Attributes:
 	alarms: Alarms that have been set based on self.time. (list of tuple)
+	auto_save: A flag for requesting a save every 30 minutes. (bool)
 	campaign: The loaded campaign information. (SRD)
 	campaign_folder: A path to the folder with the campaign files. (str)
 	changes: A flag for changes in the game state. (bool)
@@ -44,6 +46,7 @@ class Egor(cmd.Cmd):
 	round: The number of the current combat round. (int)
 	srd: The stored Source Resource Document for D&D. (SRD)
 	time: The current game time. (gtime.Time)
+	timer: A time checkpoint for autosaves. (float)
 	zoo: The creatures loaded for combat. (dict of str: Creature)
 
 	Class Attributes:
@@ -117,7 +120,7 @@ class Egor(cmd.Cmd):
 	intro = 'Welcome, Master of Dungeons.\nI am Egor, allow me to assist you.\n'
 	help_text = {'conditions': text.HELP_CONDITIONS, 'cover': text.HELP_SIGHT, 'help': text.HELP_GENERAL, 
 		'sight': text.HELP_SIGHT}
-	on_off_options = ('auto-attack', 'auto-kill', 'average-hp', 'dex-tiebreak', 'group-hp', 
+	on_off_options = ('auto-attack', 'auto-kill', 'auto-save', 'average-hp', 'dex-tiebreak', 'group-hp', 
 		'random-tiebreak')
 	prompt = 'Yes, master? '
 	tag_regex = re.compile(r'[a-zA-Z0-9\-]+')
@@ -893,6 +896,8 @@ class Egor(cmd.Cmd):
 		* auto-kill: If set to true/1/yes, Egor automatically removes non-pc
 			creatures from the initiative order when they hit 0 hp. If set to
 			false/0/no, you must manually remove them with the kill command.
+		* auto-save: If set to true/1/yes, Egor asks you every thirty minutes if he
+			he should save the current data.
 		* average-hp: Assigns the average hit points to all non-PC creatures in the
 			initiative order.
 		* campaign: Sets the campaign folder and loads any markdown files from that
@@ -1653,6 +1658,13 @@ class Egor(cmd.Cmd):
 		line: The line with the user's command. (str)
 		"""
 		print()
+		if time.time() - self.timer > 1800 and self.changes and self.auto_save:
+			print(self.voice['alert-time'])
+			choice = input(self.voice['query-save'])
+			if choice.lower() in text.YES:
+				self.do_store('')
+			print()
+			self.timer = time.time()
 		return line
 
 	def preloop(self):
@@ -1666,6 +1678,7 @@ class Egor(cmd.Cmd):
 		self.alarms = []
 		self.auto_attack = False
 		self.auto_kill = True
+		self.auto_save = True
 		self.auto_tag = ''
 		self.average_hp = False
 		self.campaign_folder = ''
@@ -1682,6 +1695,7 @@ class Egor(cmd.Cmd):
 		self.season = 'spring'
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()
+		self.timer = time.time()
 		self.tags = collections.defaultdict(list)
 		self.voice = voice.EGOR
 		self.weather_roll = '1d4*10'

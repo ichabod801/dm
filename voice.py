@@ -10,6 +10,7 @@ EGOR: A classic servant of the mad scientist interface. (dict of str: str)
 
 DRY = {
 	'__name__': 'DRY',
+	'alert-time': 'It has been 30 minutes.',
 	'choose-alarm': '\nWhich alarm would you like to kill (return for none)? ',
 	'choose-bad-count': 'Number of those combatants: ',
 	'choose-bad-guy': 'Other combatant name: ',
@@ -93,6 +94,7 @@ DRY = {
 
 EGOR = {
 	'__name__': 'EGOR',
+	'alert-time': 'Master, the half-hour glass has been drained!',
 	'choose-alarm': '\nWhich alarm would you like to kill, master (return for none)? ',
 	'choose-bad-count': 'Number of villains: ',
 	'choose-bad-guy': 'Villain name: ',

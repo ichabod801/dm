@@ -261,7 +261,7 @@ class Egor(cmd.Cmd):
 				return
 			# Add it to the list.
 			self.alarms.append(alarm)
-			self.changes = True
+			self.set_changes()
 			# Update the user.
 			print(f'Alarm set for {alarm.trigger}.')
 
@@ -406,7 +406,7 @@ class Egor(cmd.Cmd):
 		self.time.minute = 0
 		# Update the user and the system tracking.
 		print(self.time)
-		self.changes = True
+		self.set_changes()
 		self.alarm_check('day')
 
 	def do_encounter(self, arguments):
@@ -453,7 +453,7 @@ class Egor(cmd.Cmd):
 			else:
 				count = 1
 			self.encounters[name].append((bad_guy, count, group))
-		self.changes = True
+		self.set_changes()
 
 	def do_git(self, arguments):
 		"""Egor doesn't understand git."""
@@ -709,7 +709,7 @@ class Egor(cmd.Cmd):
 			else:
 				arguments = f'{arguments} | {self.auto_tag}'
 		self.new_note(arguments)
-		self.changes = True
+		self.set_changes()
 		print(self.voice['confirm-note'])
 
 	def do_npc(self, arguments):
@@ -762,7 +762,7 @@ class Egor(cmd.Cmd):
 			if low_name in self.pcs:
 				del self.pcs[low_name]
 				print(self.voice['confirm-pc-rem'].format(name))
-				self.changes = True
+				self.set_changes()
 			else:
 				print(self.voice['error-pc'].format(name))
 		elif action == 'add':
@@ -928,24 +928,24 @@ class Egor(cmd.Cmd):
 			else:
 				print(self.voice['error-on-off'].format(option))
 				return
-			self.changes = True
+			self.set_changes()
 		elif option == 'campaign':
 			self.campaign_folder = setting
 			self.load_campaign()
 			print(self.voice['confirm-campaign'].format(self.campaign_folder))
-			self.changes = True
+			self.set_changes()
 		elif option == 'climate':
 			if setting.lower() in weather.WEATHER_DATA:
 				self.climate = setting.lower()
 				print(self.voice['confirm-climate'])
-				self.changes = True
+				self.set_changes()
 			else:
 				print(self.voice['error-climate'].format(setting))
 		elif option == 'season':
 			if setting.lower() in ('spring', 'summer', 'winter', 'fall'):
 				self.season = setting.lower()
 				print(self.voice['confirm-season'].format(self.season))
-				self.changes = True
+				self.set_changes()
 			else:
 				print(self.voice['error-season'].format(setting))
 		elif option == 'time-var':
@@ -953,7 +953,7 @@ class Egor(cmd.Cmd):
 			variable = variable.lower()
 			self.time_vars[variable] = value
 			print(self.voice['confirm-time-var'].format(variable, value))
-			self.changes = True
+			self.set_changes()
 		elif option == 'voice':
 			try:
 				self.voice = getattr(voice, setting.upper())
@@ -962,7 +962,7 @@ class Egor(cmd.Cmd):
 			else:
 				print(self.voice['confirm-voice'])
 				self.prompt = self.voice['prompt']
-				self.changes = True
+				self.set_changes()
 		elif option == 'weather-roll':
 			try:
 				dice.roll(setting)
@@ -971,7 +971,7 @@ class Egor(cmd.Cmd):
 			else:
 				self.weather_roll = setting.lower()
 				print(self.voice['confirm-weather'].format(self.weather_roll))
-				self.changes = True
+				self.set_changes()
 		elif option == 'xp-method':
 			self.xp_method = setting.strip().lower()
 		else:
@@ -1263,7 +1263,7 @@ class Egor(cmd.Cmd):
 				self.time.minute = time.minute
 			else:
 				self.time += time
-			self.changes = True
+			self.set_changes()
 			# Check for year change.
 			if last_year != self.time.year:
 				self.campaign.calendar.set_year(self.time.year)
@@ -1621,7 +1621,7 @@ class Egor(cmd.Cmd):
 		key = pc.name.lower().replace(' ', '-')
 		self.pcs[key] = pc
 		self.pc_data[key] = pc_data
-		self.changes = True
+		self.set_changes()
 
 	def onecmd(self, line):
 		"""
@@ -1658,7 +1658,7 @@ class Egor(cmd.Cmd):
 		line: The line with the user's command. (str)
 		"""
 		print()
-		if time.time() - self.timer > 1800 and self.changes and self.auto_save:
+		if self.changes and self.auto_save and time.time() - self.timer > 1800:
 			command = line.split()[0]
 			if command not in ('q', 'quit'):
 				print(self.voice['alert-time'])
@@ -1718,6 +1718,13 @@ class Egor(cmd.Cmd):
 		self.changes = False
 		# Formatting.
 		print()
+
+	def set_changes(self):
+		"""Set changes and update the auto-save timer. (None)"""
+		# Check for starting the auto-save timer.
+		if self.auto_save and not self.changes:
+			self.timer = time.time()
+		self.changes = True
 
 	def set_initiative(self):
 		"""Set up a new initiative order, including the PCs. (None)"""

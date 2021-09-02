@@ -1658,13 +1658,15 @@ class Egor(cmd.Cmd):
 		line: The line with the user's command. (str)
 		"""
 		print()
-		if time.time() - self.timer > 1800 and self.changes and self.auto_save:
-			print(self.voice['alert-time'])
-			choice = input(self.voice['query-save'])
-			if choice.lower() in text.YES:
-				self.do_store('')
-			print()
-			self.timer = time.time()
+		if time.time() - self.timer > 18 and self.changes and self.auto_save:
+			command = line.split()[0]
+			if command not in ('q', 'quit'):
+				print(self.voice['alert-time'])
+				choice = input(self.voice['query-save'])
+				if choice.lower() in text.YES:
+					self.do_store('')
+				print()
+				self.timer = time.time()
 		return line
 
 	def preloop(self):

@@ -1658,7 +1658,7 @@ class Egor(cmd.Cmd):
 		line: The line with the user's command. (str)
 		"""
 		print()
-		if time.time() - self.timer > 18 and self.changes and self.auto_save:
+		if time.time() - self.timer > 1800 and self.changes and self.auto_save:
 			command = line.split()[0]
 			if command not in ('q', 'quit'):
 				print(self.voice['alert-time'])

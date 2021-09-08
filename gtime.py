@@ -504,6 +504,7 @@ class FractionalCycle(object):
 	A calendar cycle based on a fractional number of days. (object)
 
 	Attributes:
+	cycle_length: The total length of all the periods. (float)
 	keys: The unique keys for the cycle in year tables. (dict of str: str)
 	name: The name of the cycle. (str)
 	period_length: The length in days of a period in the cycle. (float)
@@ -614,14 +615,14 @@ class FractionalCycle(object):
 			start_day = int(round(self.cycle_length)) - (last_period_days - start_period_day)
 			# Get the fractional days.
 			fractional_days = self.cycle_length + overage - int(overage)
-			fractional_days = self.cycle_length
+			fractional_days = self.cycle_length # ??
 			fractional_days = overage + start_day - 1
 		else:
 			period_list = []
 			start_day = 1
 			start_period_day = 1
 			fractional_days = self.period_length + overage - int(overage)
-			fractional_days = self.period_length
+			fractional_days = self.period_length # ??
 		# Expand the full period list.
 		period_list += [(period, cycle_count) for period in self.periods]
 		# Get the initial state.
@@ -642,7 +643,7 @@ class StaticCycle(object):
 	A calendar cycle that never changes. (object)
 
 	Attributes:
-	cycle: The total number of days in the cycle. (int)
+	cycle_length: The total number of days in the cycle. (int)
 	keys: The keys for the cycle data on the year table. (dict of str: str)
 	name: The name of the cycle. (str)
 	periods: The periods of the cycle. (dict of str: int)
@@ -752,11 +753,15 @@ class Time(object):
 	Time objects sort and compare as if they were tuples of (year, day, hour,
 	minute).
 
+	The year length attribute must be set by the context using the time, based
+	on a Calendar object.
+
 	Attributes:
 	day: The day within the year. (int)
 	hour: The hour within the day. (int)
 	minute: The minute within the hour. (int)
 	year: The year. (int)
+	year_length: The number of days in the year. (int)
 
 	Class Attributes:
 	full_regex: A regular expression matching a full date/time. (Pattern)
@@ -774,8 +779,11 @@ class Time(object):
 	__add__
 	__eq__
 	__lt__
+	__radd__
 	__repr__
+	__rsub__
 	__str__
+	__sub__
 	"""
 
 	full_regex = re.compile(r'(\d+)/(\d+) (\d+):(\d\d?)')
@@ -837,6 +845,10 @@ class Time(object):
 		"""Right-handed addition. (Time)"""
 		return self.__add__(other)
 
+	def __repr__(self):
+		"""Debugging text representation. (str)"""
+		return f'Time({self.year}, {self.day}, {self.hour}, {self.minute})'
+
 	def __rsub__(self, other):
 		"""Right-handed subtraction. (Time)"""
 		# Conver other to a Time instance and subtract.
@@ -847,10 +859,6 @@ class Time(object):
 		elif isinstance(other, int):
 			other = (0, 0, 0, other)
 		return Time(*other).__sub__(self)
-
-	def __repr__(self):
-		"""Debugging text representation. (str)"""
-		return f'Time({self.year}, {self.day}, {self.hour}, {self.minute})'
 
 	def __str__(self):
 		"""Human readable text representation. (str)"""

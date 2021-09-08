@@ -2,6 +2,9 @@
 run.py
 
 A simple Egor runner, for quick access.
+
+Functions:
+run: Run the Egor interface. (Egor)
 """
 
 try:
@@ -14,6 +17,7 @@ except ImportError:
 	from dm import egor
 
 def run():
+	"""Run the Egor interface. (Egor)"""
 	interface = egor.Egor()
 	interface.cmdloop()
 	return interface

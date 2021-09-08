@@ -24,6 +24,10 @@ class Node(object):
 	"""
 	A node in a document tree. (object)
 
+	Attributes:
+	parent: The header this header/text is under. (Node)
+	children: Any headers or text under this section. (list of Node)
+
 	Methods:
 	add_child: Add a child node to the tree. (None)
 	full_text: Get the full text of the header and it's children. (str)
@@ -223,18 +227,20 @@ class SRD(object):
 	headers: The header nodes in the document. (dict of str: list of HeaderNode)
 	names: The name definitions in the document. (dict)
 	pcs: The creatures from the Player Characters chapter. (dict of str: Creature)
+	tables: The rollable tables in the SRD. (dict of str: Table)
 	zoo: The creatures in the various chapters. (dict of str: Creature)
 
 	Class Attributes:
 	file_names: The names of the SRD files. (list of str)
 
 	Methods:
+	_parse_creatures: Parse a node for creatures. (None)
+	_parse_file: Parse a markdown file from the SRD. (None)
+	_parse_names: Parse a node for named lists. (None)
+	_parse_tables: Parse a node for a rollable table. (None)
+	_read_files: Read the files of the SRD. (dict of str:str)
 	header_search: Search the chapters' headers for matches. (list of HeaderNode)
-	parse_creatures: Parse a node for creatures. (None)
-	parse_file: Parse a markdown file from the SRD. (None)
-	parse_names: Parse a node for named lists. (None)
-	parse_tables: Parse a node for a rollable table. (None)
-	read_files: Read the files of the SRD. (dict of str:str)
+	get_name: Generate a random name based on the Names chapter. (str)
 	text_search: Search the children's text for matches. (list of HeaderNode)
 
 	Overridden Methods:
@@ -244,7 +250,6 @@ class SRD(object):
 	file_names = ['01.races', '02.classes', '03.customization', '04.personalization', '05.equipment',
 		'06.abilities', '07.adventuring', '08.combat', '09.spellcasting', '10.spells', '11.gamemastering',
 		'12.treasure', '13.monsters', '14.creatures', '15.npcs']
-	name_part_re = re.compile(r'\{(\w*)\}')
 
 	def __init__(self, folder = 'srd'):
 		"""
@@ -259,52 +264,19 @@ class SRD(object):
 		self.zoo = {}
 		self.calendar, self.name = None, None
 		self.headers = collections.defaultdict(list)
-		for name, lines in self.read_files(folder).items():
-			self.chapters[name] = self.parse_file(lines)
+		for name, lines in self._read_files(folder).items():
+			self.chapters[name] = self._parse_file(lines)
 		for chapter in self.chapters.values():
-			self.parse_creatures(chapter)
-			self.parse_tables(chapter)
+			self._parse_creatures(chapter)
+			self._parse_tables(chapter)
 		for character in self.pcs.values():
 			character.pc = True
 		if 'calendar' in self.chapters:
 			self.calendar = gtime.parse_calendar(self.chapters['calendar'])
 		if 'names' in self.chapters:
-			self.parse_names(self.chapters['names'])
+			self._parse_names(self.chapters['names'])
 
-	def header_search(self, terms):
-		"""
-		Search the children's headers for matches. (list of HeaderNode)
-
-		Parameters:
-		terms: The terms to search for. (Pattern or str)
-		"""
-		# Do the header search on each chapter.
-		matches = []
-		for chapter in self.chapters.values():
-			matches.extend(chapter.header_search(terms))
-		return matches
-
-	def get_name(self, culture, gender):
-		"""
-		Generate a random name based on the Names chapter. (str)
-
-		Parameters:
-		culture: The culture to generate a name for. (str)
-		gender: The gender to generate a name for. (str)
-		"""
-		# Pull the data for that culture/gender.
-		culture = self.names[culture]
-		formats = culture['formats'][gender]
-		format_index = random.randint(1, 100)
-		for chance, gender in formats:
-			if format_index <= chance:
-				break
-		# Generate random name parts for all possible genders.
-		data = {key: random.choice(value) for key, value in culture.items() if key != 'formats'}
-		# Apply the name parts to the gender format.
-		return gender.format(**data)
-
-	def parse_creatures(self, node):
+	def _parse_creatures(self, node):
 		"""
 		Parse a node for creatures. (None)
 
@@ -326,7 +298,7 @@ class SRD(object):
 				elif node.level < 4:
 					search.extend([kid for kid in node.children if isinstance(kid, HeaderNode)])
 
-	def parse_file(self, lines):
+	def _parse_file(self, lines):
 		"""
 		Parse a markdown file from the SRD. (None)
 
@@ -369,7 +341,7 @@ class SRD(object):
 			parent.add_child(text)
 		return root
 
-	def parse_names(self, node):
+	def _parse_names(self, node):
 		"""
 		Parse a node for named lists. (None)
 
@@ -410,7 +382,7 @@ class SRD(object):
 				# All other nodes should be searched for second level nodes.
 				search.extend([child for child in node.children if isinstance(child, HeaderNode)])
 
-	def parse_tables(self, node):
+	def _parse_tables(self, node):
 		"""
 		Parse a node for a rollable table. (None)
 
@@ -452,7 +424,7 @@ class SRD(object):
 					if mode == 'rollable':
 						self.tables[name.lower()] = Table(name, roll, rows)
 
-	def read_files(self, folder = 'srd'):
+	def _read_files(self, folder = 'srd'):
 		"""
 		Read the files of the SRD. (dict of str:str)
 
@@ -465,6 +437,39 @@ class SRD(object):
 				with open(f'{folder}/{file_name}', encoding = 'utf-8') as srd_file:
 					chapters[file_name[3:-3]] = srd_file.read().split('\n')
 		return chapters
+
+	def header_search(self, terms):
+		"""
+		Search the children's headers for matches. (list of HeaderNode)
+
+		Parameters:
+		terms: The terms to search for. (Pattern or str)
+		"""
+		# Do the header search on each chapter.
+		matches = []
+		for chapter in self.chapters.values():
+			matches.extend(chapter.header_search(terms))
+		return matches
+
+	def get_name(self, culture, gender):
+		"""
+		Generate a random name based on the Names chapter. (str)
+
+		Parameters:
+		culture: The culture to generate a name for. (str)
+		gender: The gender to generate a name for. (str)
+		"""
+		# Pull the data for that culture/gender.
+		culture = self.names[culture]
+		formats = culture['formats'][gender]
+		format_index = random.randint(1, 100)
+		for chance, gender in formats:
+			if format_index <= chance:
+				break
+		# Generate random name parts for all possible genders.
+		data = {key: random.choice(value) for key, value in culture.items() if key != 'formats'}
+		# Apply the name parts to the gender format.
+		return gender.format(**data)
 
 	def text_search(self, terms):
 		"""

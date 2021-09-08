@@ -394,7 +394,6 @@ class FractionalCalendar(Calendar):
 	for details. 
 
 	Attributes:
-	months: The months of the year and their length in days. (list of str)
 	overage_month: The month getting an extra day in a long year. (str)
 	year_length: The number of days in the year. (float)
 
@@ -416,6 +415,8 @@ class FractionalCalendar(Calendar):
 		year_length: The number of days in the year. (float)
 		months: The months of the year and their length in days. (dict of str: int)
 		overage_month: overage_month: The month getting an extra day in a long year. (str)
+		cycles: The non-month cycles of the calendar. (list of Cycle)
+		formats: The date formats for the calendar. (dict of str: str)
 		"""
 		# Set the fractional specific attributes.
 		self.year_length = year_length

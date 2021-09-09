@@ -79,12 +79,28 @@ class Attack(object):
 		hit_text = self.text[hit:period]
 		self.damage = []
 		roll = ''
+		roll_done = False
 		for word in hit_text.split():
-			if word.startswith('(') and word.endswith(')'):
-				roll = word[1:-1]
-			elif roll:
+			# Check for start of damage roll.
+			if word.startswith('('):
+				if word.endswith(')'):
+					roll = word[1:-1]
+					roll_done = True
+				else:
+					roll = word[1:]
+			# Pick up the word after the damage roll as the damage type.
+			elif roll_done:
 				self.damage.append((roll, word))
 				roll = ''
+				roll_done = False
+			# Check for the end of a damage roll with a space in it.
+			elif roll:
+				if word.endswith(')'):
+					roll += word[:-1]
+					roll_done = True
+				else:
+					roll += word
+			# Check for different damage rolls as opposed to multiple damage rolls.
 			elif word == 'or':
 				self.or_damage = True
 		# Get any additional effects.

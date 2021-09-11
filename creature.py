@@ -42,6 +42,8 @@ class Attack(object):
 	Methods:
 	add_text: Add further explanatory text to the attack. (None)
 	attack: Make the attack. (tuple of int, str)
+	base_text: Base text for string representations. (str)
+	full_text: Full text representation. (str)
 
 	Overridden Methods:
 	__init__
@@ -122,14 +124,9 @@ class Attack(object):
 
 	def __str__(self):
 		"""Human readable text representation. (str)"""
-		plus = '+' if self.bonus > -1 else ''
-		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
-		if self.or_damage:
-			damage_text = ' or '.join(damage_bits)
-		else:
-			damage_text = ', '.join(damage_bits)
+		base_text = self.base_text()
 		more_text = ' and more' if self.additional else ''
-		return f'{self.name}, {plus}{self.bonus} to hit, {self.range}, {damage_text}{more_text}'
+		return f'{base_text}{more_text}'
 
 	def add_text(self, text):
 		"""
@@ -138,7 +135,7 @@ class Attack(object):
 		Parameters:
 		text: The extra explanatory text. (str)
 		"""
-		self.additional = '{}\n\n{}'.format(self.additional, text)
+		self.additional = '{} {}'.format(self.additional, text)
 
 	def attack(self, target, advantage = 0, temp_bonus = 0):
 		"""
@@ -201,6 +198,24 @@ class Attack(object):
 			total = 0
 			text = f'Miss ({hit_roll} + {total_bonus})'
 		return total, text
+
+	def base_text(self):
+		"""Base text for string representations. (str)"""
+		plus = '+' if self.bonus > -1 else ''
+		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
+		if self.or_damage:
+			damage_text = ' or '.join(damage_bits)
+		else:
+			damage_text = ', '.join(damage_bits)
+		return f'{self.name}, {plus}{self.bonus} to hit, {self.range}, {damage_text}'
+
+	def full_text(self):
+		"""Full text representation. (str)"""
+		base_text = self.base_text()
+		if self.additional:
+			return f'{base_text}. {self.additional}'
+		else:
+			return base_text
 
 class Creature(object):
 	"""
@@ -871,7 +886,7 @@ class Creature(object):
 		# Attacks section
 		lines.append('Attacks:')
 		for letter, attack in zip(self.letters, self.attacks.values()):
-			lines.append(f'   {letter}: {attack}')
+			lines.append(f'   {letter}: {attack.full_text()}')
 		return '\n'.join(lines)
 
 	def update_conditions(self):

@@ -578,9 +578,9 @@ class Egor(cmd.Cmd):
 		"""
 		Set a creature's hit points.
 
-		The arguments are a creature name or initiative order number, and a number
-		of points of damage to do to that creature. You can also give the optional
-		argument of 'temp' or 'temporary' to set the creature's temporary hit points.
+		The arguments are a creature name or initiative order number, and how many hit
+		points that creature should have. You can also give the optional argument of 
+		'temp' or 'temporary' to set the creature's temporary hit points.
 		"""
 		# Parse the arguments.
 		words = arguments.split()

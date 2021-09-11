@@ -693,7 +693,10 @@ class Creature(object):
 			speed_text = f'{speed_text}; {self.other_speeds}'
 		lines.append(speed_text)
 		lines.append(f'AC: {self.ac}')
-		lines.append(f'HP: {self.hp}/{self.hp_max}')
+		if self.hp_temp:
+			lines.append(f'HP: {self.hp}+{self.hp_temp}/{self.hp_max}')
+		else:
+			lines.append(f'HP: {self.hp}/{self.hp_max}')
 		lines.append('-------------------')
 		#lines.extend(['', '-------------------', ''])
 		# Set up features:
@@ -809,7 +812,10 @@ class Creature(object):
 			lines.append(f'**Armor Class** {self.ac} ({self.ac_text})')
 		else:
 			lines.append(f'**Armor Class** {self.ac}')
-		lines.append(f'**Hit Points** {self.hp}/{self.hp_max} ({self.hp_roll})')
+		if self.hp_temp:
+			lines.append(f'**Hit Points** {self.hp}+{self.hp_temp}/{self.hp_max} ({self.hp_roll})')
+		else:
+			lines.append(f'**Hit Points** {self.hp}/{self.hp_max} ({self.hp_roll})')
 		if self.other_speeds:
 			lines.append(f'**Speed** {self.speed} ft., {self.other_speeds}')
 		else:

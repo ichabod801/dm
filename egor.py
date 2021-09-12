@@ -724,12 +724,22 @@ class Egor(cmd.Cmd):
 		"""
 		Show the next person in the initiative queue. (n)
 		"""
+		# Update conditions (end of turn).
+		combatant = self.init[self.init_count]
+		name = combatant.name.lower().replace(' ', '-')
+		for creature in self.init:
+			creature.update_conditions(creature, 'e')
+		# Move to the next person.
 		self.init_count += 1
 		if self.init_count >= len(self.init):
 			self.init_count = 0
 			self.round += 1
+		# Update condtions start of turn.
 		combatant = self.init[self.init_count]
-		combatant.update_conditions()
+		name = combatant.name.lower().replace(' ', '-')
+		for creature in self.init:
+			creature.update_conditions(creature, 's')
+		# Show the initiative queue.
 		self.combat_text()
 
 	def do_note(self, arguments):

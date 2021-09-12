@@ -1332,8 +1332,9 @@ class Egor(cmd.Cmd):
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
 		condition = words[1].lower()
-		if condition in target.conditions:
-			del target.conditions[condition]
+		new_conditions = [con for con in target.conditions if con[0] == condition]
+		if len(target.conditions) != len(new_conditions):
+			target.conditions = new_conditions
 			print(self.voice['confirm-uncondition'].format(target.name, condition))
 		else:
 			print(self.voice['error-uncondition'].format(target.name, condition))

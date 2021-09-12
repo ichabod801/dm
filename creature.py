@@ -342,7 +342,7 @@ class Creature(object):
 		"""Human readable text representation. (str)"""
 		text = f'{self.name}; AC {self.ac + self.ac_mod}; HP {self.hp}/{self.hp_max}'
 		if self.conditions:
-			text = '{}; {}'.format(text, ', '.join(self.conditions.keys()))
+			text = '{}; {}'.format(text, ', '.join([con[0] for con in self.conditions]))
 		return text
 
 	def _parse_abilities(self, line):
@@ -701,7 +701,7 @@ class Creature(object):
 		# Set up header.
 		lines = ['-------------------', self.name]
 		if self.conditions:
-			lines.append(', '.join(self.conditions.keys()))
+			lines.append(', '.join([con[0] for con in self.conditions]))
 		lines.append('-------------------')
 		#lines.extend(['', '-------------------', ''])
 		# Set up speed/hp section.

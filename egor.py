@@ -377,16 +377,29 @@ class Egor(cmd.Cmd):
 
 		The arguments are a creature name or initiative order, and a condition to
 		add to their condition list. An optional third argument is a number of 
-		rounds they condition will last.
+		rounds they condition will last. If you provide a number of rounds, you can
+		also proved a creature ID for the creature whose turn it ends on, and/or
+		s/start or e/end to indicate whethere the condition ends at the start or
+		end of a turn.
 		"""
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
+		end_round = target
 		condition = words[1].lower()
 		if len(words) > 2:
 			rounds = int(words[2])
 		else:
 			rounds = -1
-		target.conditions[condition] = rounds
+		for word in words[3:]:
+			end = 'e'
+			if word.lower() in ('s', 'start'):
+				end = 's'
+			elif word.lower() in ('e', 'end'):
+				end = 'e'
+			else:
+				creature = self.get_creature(word.lower(), 'open')
+				end_round = creature.name
+		target.conditions.append([condition, rounds, end_round.lower().replace(' ', '-'), end])
 		print(self.voice['confirm-condition'].format(target.name, condition))
 
 	def do_date(self, arguments):

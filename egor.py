@@ -384,14 +384,14 @@ class Egor(cmd.Cmd):
 		"""
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
-		end_round = target
 		condition = words[1].lower()
+		end_round = target.name
+		end = 'e'
 		if len(words) > 2:
 			rounds = int(words[2])
 		else:
 			rounds = -1
 		for word in words[3:]:
-			end = 'e'
 			if word.lower() in ('s', 'start'):
 				end = 's'
 			elif word.lower() in ('e', 'end'):
@@ -728,7 +728,7 @@ class Egor(cmd.Cmd):
 		combatant = self.init[self.init_count]
 		name = combatant.name.lower().replace(' ', '-')
 		for creature in self.init:
-			creature.update_conditions(creature, 'e')
+			creature.update_conditions(name, 'e')
 		# Move to the next person.
 		self.init_count += 1
 		if self.init_count >= len(self.init):
@@ -738,7 +738,7 @@ class Egor(cmd.Cmd):
 		combatant = self.init[self.init_count]
 		name = combatant.name.lower().replace(' ', '-')
 		for creature in self.init:
-			creature.update_conditions(creature, 's')
+			creature.update_conditions(name, 's')
 		# Show the initiative queue.
 		self.combat_text()
 
@@ -1332,7 +1332,7 @@ class Egor(cmd.Cmd):
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
 		condition = words[1].lower()
-		new_conditions = [con for con in target.conditions if con[0] == condition]
+		new_conditions = [con for con in target.conditions if con[0] != condition]
 		if len(target.conditions) != len(new_conditions):
 			target.conditions = new_conditions
 			print(self.voice['confirm-uncondition'].format(target.name, condition))

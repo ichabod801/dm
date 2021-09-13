@@ -644,7 +644,7 @@ class Creature(object):
 		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
 		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
 		self.saves = self.bonuses.copy()
-		self.actions, self.attacks, self.features = {}, {} {}
+		self.actions, self.attacks, self.features = {}, {}, {}
 		self.conditions = []
 		self.legendary, self.reactions = {}, {}
 		self.ac_mod, self.cr, self.hp_temp, self.hp_max, self.init_bonus = 0, 0, 0, 0, 0
@@ -742,6 +742,7 @@ class Creature(object):
 		clone = Creature(DummyNode(name, []))
 		clone.__dict__ = self.__dict__.copy()
 		clone.name = name
+		clone.conditions = self.conditions[:]
 		if not average_hp:
 			clone.hp = dice.roll(clone.hp_roll)
 			clone.hp_max = clone.hp
@@ -901,12 +902,16 @@ class Creature(object):
 		"""
 		drop = set()
 		for con_index, condition in enumerate(self.conditions):
-			if [combatant, end_point] == con[2:]:
+			if [combatant, end_point] == condition[2:]:
 				condition[1] -= 1
 				if not condition[1]:
 					drop.add(con_index)
 		if drop:
-			self.conditions = [con for con_index, con in enumerate(self.conditions) if con not in drop]
+			new_conditions = []
+			for con_index, condition in enumerate(self.conditions):
+				if con_index not in drop:
+					new_conditions.append(condition)
+			self.conditions = new_conditions
 
 # A fake header node for creating blank creatures.
 DummyNode = collections.namedtuple('DummyNode', ('name', 'children'))

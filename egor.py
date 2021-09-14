@@ -378,7 +378,7 @@ class Egor(cmd.Cmd):
 		The arguments are a creature name or initiative order, and a condition to
 		add to their condition list. An optional third argument is a number of 
 		rounds they condition will last. If you provide a number of rounds, you can
-		also proved a creature ID for the creature whose turn it ends on, and/or
+		also provide a creature ID for the creature whose turn it ends on, and/or
 		s/start or e/end to indicate whethere the condition ends at the start or
 		end of a turn.
 		"""

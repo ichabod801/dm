@@ -1230,7 +1230,11 @@ class Egor(cmd.Cmd):
 		name = arguments.strip().lower()
 		# Handle simple calls by name.
 		if name in self.tables:
-			print(self.tables[name].roll())
+			while True:
+				result, name = self.tables[name.lower()].roll()
+				print(result)
+				if not name:
+					break
 		# Handle calls using a regular expression.
 		elif name.startswith('$'):
 			regex = re.compile(name[1:])
@@ -1250,7 +1254,11 @@ class Egor(cmd.Cmd):
 				print(self.voice['error-table-regex'])
 				return
 			# Print the result.
-			print(self.tables[table].roll())
+			while True:
+				result, name = self.tables[name.lower()].roll()
+				print(result)
+				if not name:
+					break
 		# Handle requests for a list of tables.
 		elif name == 'list':
 			names = [name.title() for name in self.tables.keys()]

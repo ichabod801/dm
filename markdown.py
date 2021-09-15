@@ -535,12 +535,21 @@ class Table(object):
 			self.rows.append((low, high, result.strip()))
 
 	def roll(self):
-		"""Generate a result from the table. (str)"""
+		"""
+		Generate a result from the table. (str, str)
+
+		The result is a tuple of the the result of the roll on the table, and the
+		name of the next table to roll on (empty string if None).
+		"""
 		value = dice.roll(self.die_roll)
 		for low, high, result in self.rows:
 			if low <= value <= high:
 				break
-		return result
+		if '->' in result:
+			result, next_table = [word.strip() for word in result.split('->')]
+		else:
+			next_table = ''
+		return result, next_table
 
 if __name__ == '__main__':
 	srd = SRD()

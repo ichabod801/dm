@@ -376,37 +376,17 @@ class Egor(cmd.Cmd):
 		Add a condition to a creature. (con)
 
 		The arguments are a creature name or initiative order, and a condition to
-		add to their condition list. Various arguments are allowed after the 
-		condition. You can put a number preceded by a 'd' (like d2) to specify a 
-		duration for the conditon. Conditions without a specified duration only end
-		when you use the uncondition command. You can put 's' or 'start' to specify 
-		that the conditon ends at the start of the turn rather than the end of the 
-		turn. Any other arguments are assumed to the creature whose turn the condition
-		ends on.
-
-		For example, a monk's stunning attack lasts until the end of the monk's next
-		turn. If the monk Bruce stuns thug-2, it would be 'con thug-2 stun d2 bruce.'
-		The 'bruce' argument specifies in ends on Bruce's turn. The duration of d2 may
-		seem odd, but it is necessary if this is entered on Bruce's turn, because you
-		have to account for the end of the current turn.
+		add to their condition list. An optional third argument is a number of 
+		rounds they condition will last.
 		"""
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
 		condition = words[1].lower()
-		rounds = -1
-		end_round = target.name
-		end = 'e'
-		for word in words[2:]:
-			if word.lower() in ('s', 'start'):
-				end = 's'
-			elif word.lower() in ('e', 'end'):
-				end = 'e'
-			elif word.startswith('d') and word[1:].isdigit():
-				rounds = int(word[1:])
-			else:
-				creature = self.get_creature(word.lower(), 'open')
-				end_round = creature.name
-		target.conditions.append([condition, rounds, end_round.lower().replace(' ', '-'), end])
+		if len(words) > 2:
+			rounds = int(words[2])
+		else:
+			rounds = -1
+		target.conditions[condition] = rounds
 		print(self.voice['confirm-condition'].format(target.name, condition))
 
 	def do_date(self, arguments):
@@ -598,9 +578,9 @@ class Egor(cmd.Cmd):
 		"""
 		Set a creature's hit points.
 
-		The arguments are a creature name or initiative order number, and how many hit
-		points that creature should have. You can also give the optional argument of 
-		'temp' or 'temporary' to set the creature's temporary hit points.
+		The arguments are a creature name or initiative order number, and a number
+		of points of damage to do to that creature. You can also give the optional
+		argument of 'temp' or 'temporary' to set the creature's temporary hit points.
 		"""
 		# Parse the arguments.
 		words = arguments.split()
@@ -731,22 +711,12 @@ class Egor(cmd.Cmd):
 		"""
 		Show the next person in the initiative queue. (n)
 		"""
-		# Update conditions (end of turn).
-		combatant = self.init[self.init_count]
-		name = combatant.name.lower().replace(' ', '-')
-		for creature in self.init:
-			creature.update_conditions(name, 'e')
-		# Move to the next person.
 		self.init_count += 1
 		if self.init_count >= len(self.init):
 			self.init_count = 0
 			self.round += 1
-		# Update condtions start of turn.
 		combatant = self.init[self.init_count]
-		name = combatant.name.lower().replace(' ', '-')
-		for creature in self.init:
-			creature.update_conditions(name, 's')
-		# Show the initiative queue.
+		combatant.update_conditions()
 		self.combat_text()
 
 	def do_note(self, arguments):
@@ -1339,9 +1309,8 @@ class Egor(cmd.Cmd):
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
 		condition = words[1].lower()
-		new_conditions = [con for con in target.conditions if con[0] != condition]
-		if len(target.conditions) != len(new_conditions):
-			target.conditions = new_conditions
+		if condition in target.conditions:
+			del target.conditions[condition]
 			print(self.voice['confirm-uncondition'].format(target.name, condition))
 		else:
 			print(self.voice['error-uncondition'].format(target.name, condition))

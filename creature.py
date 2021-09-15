@@ -42,8 +42,6 @@ class Attack(object):
 	Methods:
 	add_text: Add further explanatory text to the attack. (None)
 	attack: Make the attack. (tuple of int, str)
-	base_text: Base text for string representations. (str)
-	full_text: Full text representation. (str)
 
 	Overridden Methods:
 	__init__
@@ -81,28 +79,12 @@ class Attack(object):
 		hit_text = self.text[hit:period]
 		self.damage = []
 		roll = ''
-		roll_done = False
 		for word in hit_text.split():
-			# Check for start of damage roll.
-			if word.startswith('('):
-				if word.endswith(')'):
-					roll = word[1:-1]
-					roll_done = True
-				else:
-					roll = word[1:]
-			# Pick up the word after the damage roll as the damage type.
-			elif roll_done:
+			if word.startswith('(') and word.endswith(')'):
+				roll = word[1:-1]
+			elif roll:
 				self.damage.append((roll, word))
 				roll = ''
-				roll_done = False
-			# Check for the end of a damage roll with a space in it.
-			elif roll:
-				if word.endswith(')'):
-					roll += word[:-1]
-					roll_done = True
-				else:
-					roll += word
-			# Check for different damage rolls as opposed to multiple damage rolls.
 			elif word == 'or':
 				self.or_damage = True
 		# Get any additional effects.
@@ -124,9 +106,14 @@ class Attack(object):
 
 	def __str__(self):
 		"""Human readable text representation. (str)"""
-		base_text = self.base_text()
+		plus = '+' if self.bonus > -1 else ''
+		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
+		if self.or_damage:
+			damage_text = ' or '.join(damage_bits)
+		else:
+			damage_text = ', '.join(damage_bits)
 		more_text = ' and more' if self.additional else ''
-		return f'{base_text}{more_text}'
+		return f'{self.name}, {plus}{self.bonus} to hit, {self.range}, {damage_text}{more_text}'
 
 	def add_text(self, text):
 		"""
@@ -135,7 +122,7 @@ class Attack(object):
 		Parameters:
 		text: The extra explanatory text. (str)
 		"""
-		self.additional = '{} {}'.format(self.additional, text)
+		self.additional = '{}\n\n{}'.format(self.additional, text)
 
 	def attack(self, target, advantage = 0, temp_bonus = 0):
 		"""
@@ -199,24 +186,6 @@ class Attack(object):
 			text = f'Miss ({hit_roll} + {total_bonus})'
 		return total, text
 
-	def base_text(self):
-		"""Base text for string representations. (str)"""
-		plus = '+' if self.bonus > -1 else ''
-		damage_bits = [f'{roll} {damage_type}' for roll, damage_type in self.damage]
-		if self.or_damage:
-			damage_text = ' or '.join(damage_bits)
-		else:
-			damage_text = ', '.join(damage_bits)
-		return f'{self.name}, {plus}{self.bonus} to hit, {self.range}, {damage_text}'
-
-	def full_text(self):
-		"""Full text representation. (str)"""
-		base_text = self.base_text()
-		if self.additional:
-			return f'{base_text}. {self.additional}'
-		else:
-			return base_text
-
 class Creature(object):
 	"""
 	A creature for combat or information. (object)
@@ -233,8 +202,7 @@ class Creature(object):
 	alignment: The creature's alignment. (str)
 	attacks: The creature's attack actions. (dict of str: Attack)
 	bonuses: The creature's ability bonuses. (dict of str: int)
-	conditions: Any conditions affecting the creature, with timers. (list of lists)
-		sub-lists are condition, rounds, creature's round to end on, start or end.
+	conditions: Any conditions affecting the creature, with timers. (dict of str: int)
 	cr: The creature's challenge rating. (int)
 	description: The creature's descriptive text. (str)
 	features: Non-action features of the creature. (dict of str: str)
@@ -342,7 +310,7 @@ class Creature(object):
 		"""Human readable text representation. (str)"""
 		text = f'{self.name}; AC {self.ac + self.ac_mod}; HP {self.hp}/{self.hp_max}'
 		if self.conditions:
-			text = '{}; {}'.format(text, ', '.join([con[0] for con in self.conditions]))
+			text = '{}; {}'.format(text, ', '.join(self.conditions.keys()))
 		return text
 
 	def _parse_abilities(self, line):
@@ -644,8 +612,7 @@ class Creature(object):
 		self.abilities = {'str': 10, 'dex': 10, 'con': 10, 'int': 10, 'wis': 10, 'cha': 10}
 		self.bonuses = {'str': 0, 'dex': 0, 'con': 0, 'int': 0, 'wis': 0, 'cha': 0}
 		self.saves = self.bonuses.copy()
-		self.actions, self.attacks, self.features = {}, {}, {}
-		self.conditions = []
+		self.actions, self.attacks, self.conditions, self.features = {}, {}, {}, {}
 		self.legendary, self.reactions = {}, {}
 		self.ac_mod, self.cr, self.hp_temp, self.hp_max, self.init_bonus = 0, 0, 0, 0, 0
 		self.initiative, self.xp = 0, 0
@@ -701,7 +668,7 @@ class Creature(object):
 		# Set up header.
 		lines = ['-------------------', self.name]
 		if self.conditions:
-			lines.append(', '.join([con[0] for con in self.conditions]))
+			lines.append(', '.join(self.conditions.keys()))
 		lines.append('-------------------')
 		#lines.extend(['', '-------------------', ''])
 		# Set up speed/hp section.
@@ -710,10 +677,7 @@ class Creature(object):
 			speed_text = f'{speed_text}; {self.other_speeds}'
 		lines.append(speed_text)
 		lines.append(f'AC: {self.ac}')
-		if self.hp_temp:
-			lines.append(f'HP: {self.hp}+{self.hp_temp}/{self.hp_max}')
-		else:
-			lines.append(f'HP: {self.hp}/{self.hp_max}')
+		lines.append(f'HP: {self.hp}/{self.hp_max}')
 		lines.append('-------------------')
 		#lines.extend(['', '-------------------', ''])
 		# Set up features:
@@ -742,7 +706,6 @@ class Creature(object):
 		clone = Creature(DummyNode(name, []))
 		clone.__dict__ = self.__dict__.copy()
 		clone.name = name
-		clone.conditions = self.conditions[:]
 		if not average_hp:
 			clone.hp = dice.roll(clone.hp_roll)
 			clone.hp_max = clone.hp
@@ -830,10 +793,7 @@ class Creature(object):
 			lines.append(f'**Armor Class** {self.ac} ({self.ac_text})')
 		else:
 			lines.append(f'**Armor Class** {self.ac}')
-		if self.hp_temp:
-			lines.append(f'**Hit Points** {self.hp}+{self.hp_temp}/{self.hp_max} ({self.hp_roll})')
-		else:
-			lines.append(f'**Hit Points** {self.hp}/{self.hp_max} ({self.hp_roll})')
+		lines.append(f'**Hit Points** {self.hp}/{self.hp_max} ({self.hp_roll})')
 		if self.other_speeds:
 			lines.append(f'**Speed** {self.speed} ft., {self.other_speeds}')
 		else:
@@ -889,29 +849,14 @@ class Creature(object):
 		# Attacks section
 		lines.append('Attacks:')
 		for letter, attack in zip(self.letters, self.attacks.values()):
-			lines.append(f'   {letter}: {attack.full_text()}')
+			lines.append(f'   {letter}: {attack}')
 		return '\n'.join(lines)
 
-	def update_conditions(self, combatant, end_point):
-		"""
-		Update condition timers, and remove finished conditions. (None)
-
-		Parameters:
-		combatant: The name of the current combatant. (str)
-		end_point: 's' for the start of the round, 'e' for the end. (str)
-		"""
-		drop = set()
-		for con_index, condition in enumerate(self.conditions):
-			if [combatant, end_point] == condition[2:]:
-				condition[1] -= 1
-				if not condition[1]:
-					drop.add(con_index)
-		if drop:
-			new_conditions = []
-			for con_index, condition in enumerate(self.conditions):
-				if con_index not in drop:
-					new_conditions.append(condition)
-			self.conditions = new_conditions
+	def update_conditions(self):
+		""" Update condition timers, and remove finished conditions. (None)"""
+		for condition in self.conditions:
+			self.conditions[condition] -= 1
+		self.conditions = {con: rounds for con, rounds in self.conditions.items() if rounds}
 
 # A fake header node for creating blank creatures.
 DummyNode = collections.namedtuple('DummyNode', ('name', 'children'))

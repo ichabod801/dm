@@ -376,26 +376,33 @@ class Egor(cmd.Cmd):
 		Add a condition to a creature. (con)
 
 		The arguments are a creature name or initiative order, and a condition to
-		add to their condition list. An optional third argument is a number of 
-		rounds they condition will last. If you provide a number of rounds, you can
-		also provide a creature ID for the creature whose turn it ends on, and/or
-		s/start or e/end to indicate whethere the condition ends at the start or
-		end of a turn.
+		add to their condition list. Various arguments are allowed after the 
+		condition. You can put a number preceded by a 'd' (like d2) to specify a 
+		duration for the conditon. Conditions without a specified duration only end
+		when you use the uncondition command. You can put 's' or 'start' to specify 
+		that the conditon ends at the start of the turn rather than the end of the 
+		turn. Any other arguments are assumed to the creature whose turn the condition
+		ends on.
+
+		For example, a monk's stunning attack lasts until the end of the monk's next
+		turn. If the monk Bruce stuns thug-2, it would be 'con thug-2 stun d2 bruce.'
+		The 'bruce' argument specifies in ends on Bruce's turn. The duration of d2 may
+		seem odd, but it is necessary if this is entered on Bruce's turn, because you
+		have to account for the end of the current turn.
 		"""
 		words = arguments.split()
 		target = self.get_creature(words[0], 'combat')
 		condition = words[1].lower()
+		rounds = -1
 		end_round = target.name
 		end = 'e'
-		if len(words) > 2:
-			rounds = int(words[2])
-		else:
-			rounds = -1
-		for word in words[3:]:
+		for word in words[2:]:
 			if word.lower() in ('s', 'start'):
 				end = 's'
 			elif word.lower() in ('e', 'end'):
 				end = 'e'
+			elif word.startswith('d') and word[1:].isdigit():
+				rounds = int(word[1:])
 			else:
 				creature = self.get_creature(word.lower(), 'open')
 				end_round = creature.name

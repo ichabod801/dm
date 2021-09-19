@@ -344,7 +344,13 @@ class Egor(cmd.Cmd):
 		"""
 		Run all of the current combatants attacks with no target. (auto, @@)
 		"""
-		attacker = self.init[self.init_count]
+		try:
+			attacker = self.init[self.init_count]
+		except IndexError:
+			if self.init:
+				raise CreatureError(self.voice['error-creature-ndx'])
+			else:
+				raise CreatureError(self.voice['error-no-combat'])
 		print(attacker.auto_attack())
 
 	def do_autotag(self, arguments):
@@ -604,7 +610,7 @@ class Egor(cmd.Cmd):
 		"""
 		# Parse the arguments.
 		words = arguments.split()
-		target = self.get_creature(words[0])
+		target = self.get_creature(target_id)
 		# Apply the hp as directed.
 		if len(words) > 2 and words[2].lower() in ('temp', 'temporary'):
 			target.hp_temp = max(target.hp_temp, int(words[1]))
@@ -732,7 +738,11 @@ class Egor(cmd.Cmd):
 		Show the next person in the initiative queue. (n)
 		"""
 		# Update conditions (end of turn).
-		combatant = self.init[self.init_count]
+		try:
+			combatant = self.init[self.init_count]
+		except IndexError:
+			print(self.voice['error-no-combat'])
+			return
 		name = combatant.name.lower().replace(' ', '-')
 		for creature in self.init:
 			creature.update_conditions(name, 'e')
@@ -1040,7 +1050,10 @@ class Egor(cmd.Cmd):
 
 	def do_show(self, arguments):
 		"""Show the initiative order."""
-		self.combat_text()
+		try:
+			self.combat_text()
+		except IndexError:
+			print(self.voice['error-no-combat'])
 
 	def do_skill(self, arguments):
 		"""
@@ -1480,8 +1493,11 @@ class Egor(cmd.Cmd):
 		elif creature.isdigit():
 			try:
 				creature = self.init[int(creature) - 1]
-			except ValueError:
-				raise CreatureError(self.voice['error-creature-ndx'])
+			except IndexError:
+				if self.init:
+					raise CreatureError(self.voice['error-creature-ndx'])
+				else:
+					raise CreatureError(self.voice['error-no-combat'])
 		# Check non-combat containers outside of combat.
 		elif context == 'open' and creature in self.pcs:
 			creature = self.pcs[creature.lower()]
@@ -1756,10 +1772,12 @@ class Egor(cmd.Cmd):
 		self.group_hp = True
 		self.encounters = {}
 		self.init = []
+		self.init_count = -1
 		self.notes = []
 		self.pc_data = {}
 		self.pcs = {}
 		self.random_tiebreak = False
+		self.round = 0
 		self.season = 'spring'
 		self.time = gtime.Time(1, 1, 6, 0)
 		self.time_vars = Egor.time_vars.copy()

@@ -377,7 +377,7 @@ class Creature(object):
 		"""
 		parts = text.split(None, 1)
 		self.ac = int(parts[0])
-		self.ac_text = parts[1] if len(parts) > 1 else ''
+		self.ac_text = parts[1].strip(' ()') if len(parts) > 1 else ''
 
 	def _parse_action(self, name, text):
 		"""

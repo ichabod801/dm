@@ -924,6 +924,7 @@ class CreatureGroup(object):
 	name: The name of the group of creatures. (str)
 
 	Methods:
+	_ac_text: Text representation of individual ACs, as needed. (str)
 	_condition_text: Text representation of inidividual condtions. (str)
 	_hp_text: Text representation of the individual hit points. (str)
 	combat_text: Text representation for the group's turn in combat. (str)
@@ -948,6 +949,8 @@ class CreatureGroup(object):
 		self.creature_name = creature_name
 		self.creatures = creatures
 		# Set the derived attributes
+		self.abilities = self.creatures[0].abilities
+		self.init_bonus = self.creatures[0].init_bonus
 		self.name = f'{self.creature_name}-group-of-{len(self.creatures)}'
 		# Set the default attributes.
 		self.initiative = 0
@@ -958,10 +961,19 @@ class CreatureGroup(object):
 
 	def __str__(self):
 		"""Human readable text representation. (str)"""
-		text = f'{self.name}; AC {self.ac + self.ac_mod}; HP {self._hp_text()}'
+		text = f'{self.name}; AC {self._ac_text()}; HP {self._hp_text()}'
 		con_text = self._condition_text()
 		if con_text:
 			text = f'{text}; {con_text}'
+		return text
+
+	def _ac_text(self):
+		"""Text representation of individual ACs, as needed. (str)"""
+		acs = [creature.ac + creature.ac_mod for creature in self.creatures]
+		if len(set(acs)) > 1:
+			text = '/'.join([str(ac) for ac in acs])
+		else:
+			text = str(acs[0])
 		return text
 
 	def _condition_text(self):
@@ -971,7 +983,7 @@ class CreatureGroup(object):
 			if creature.conditions:
 				con_comma = ', '.join([con[0] for con in self.conditions])
 				con_text.append(f'{creature_index}: {con_comma}')
-		return '; '.format(con_text)
+		return '; '.join(con_text)
 
 	def _hp_text(self):
 		"""Text representation of the individual hit points. (str)"""
@@ -989,7 +1001,7 @@ class CreatureGroup(object):
 		lines = ['-------------------', self.name]
 		con_text = self._condition_text()
 		if con_text:
-			lines.append(', '.join([con[0] for con in self.conditions]))
+			lines.append(con_text)
 		lines.append('-------------------')
 		# Get a sample creature
 		sample = self.creatures[0]
@@ -998,7 +1010,7 @@ class CreatureGroup(object):
 		if sample.other_speeds:
 			speed_text = f'{speed_text}; {sample.other_speeds}'
 		lines.append(speed_text)
-		lines.append(f'AC: {sample.ac}')
+		lines.append(f'AC: {self._ac_text()}')
 		lines.append(f'HP: {self._hp_text()}')
 		lines.append('-------------------')
 		# Set up features:

@@ -738,24 +738,14 @@ class Egor(cmd.Cmd):
 		Show the next person in the initiative queue. (n)
 		"""
 		# Update conditions (end of turn).
-		try:
-			combatant = self.init[self.init_count]
-		except IndexError:
-			print(self.voice['error-no-combat'])
-			return
-		name = combatant.name.lower().replace(' ', '-')
-		for creature in self.init:
-			creature.update_conditions(name, 'e')
+		self.update_conditions('e')
 		# Move to the next person.
 		self.init_count += 1
 		if self.init_count >= len(self.init):
 			self.init_count = 0
 			self.round += 1
 		# Update condtions start of turn.
-		combatant = self.init[self.init_count]
-		name = combatant.name.lower().replace(' ', '-')
-		for creature in self.init:
-			creature.update_conditions(name, 's')
+		self.update_conditions('s')
 		# Show the initiative queue.
 		self.combat_text()
 
@@ -1470,8 +1460,7 @@ class Egor(cmd.Cmd):
 				self.combatants[npc.name.lower()] = npc
 			# Handle groups
 			if group:
-				sub_name = f'{name}-group-of-{count}'
-				npc = data.copy(sub_name, average_hp = True)
+				npc = CreatureGroup(name, self.init[-count:])
 				npc.init()
 				self.init.append(npc)
 
@@ -1507,7 +1496,7 @@ class Egor(cmd.Cmd):
 		else:
 			raise CreatureError(self.voice['error-creature'].format(creature_text))
 		# Handle ids within groups.
-		if 'group-of' in creature.name:
+		if isinstance(creature, CreatureGroup):
 			count = creature.name.split('-')[-1]
 			name = creature.name[:creature.name.index('-group')]
 			which = input(self.voice['query-creature'].format(name, count))
@@ -1825,6 +1814,29 @@ class Egor(cmd.Cmd):
 			else:
 				pc.init()
 			self.init.append(pc)
+
+	def update_conditions(self, timing):
+		"""
+		Update conditions on creatures. (None)
+
+		Parameters:
+		timing: 'e' for end of turn, 's' for start of turn. (str)
+		"""
+		# Get the combatant, checking for combat having started.
+		try:
+			combatant = self.init[self.init_count]
+		except IndexError:
+			print(self.voice['error-no-combat'])
+			return
+		# Get the name or names of the combatant.
+		if isinstance(combatant, CreatureGroup):
+			names = [creature.name.lower().replace(' ', '-') for creature in combatant.creatures]
+		else:
+			names = [combatant.name.lower().replace(' ', '-')]
+		# Update the conditions for all names and all combatants.
+		for name in names:
+			for creature in self.init:
+				creature.update_conditions(name, timing)
 
 if __name__ == '__main__':
 	egor = Egor()

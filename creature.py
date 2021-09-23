@@ -928,7 +928,7 @@ class CreatureGroup(object):
 	_condition_text: Text representation of inidividual condtions. (str)
 	_hp_text: Text representation of the individual hit points. (str)
 	attack: Attack something using a proxy. (tuple of int, str)
-	auto_attack: Do all attacks for all creatures without a target. (str
+	auto_attack: Do all attacks for all creatures without a target. (str)
 	combat_text: Text representation for the group's turn in combat. (str)
 	init: Roll initiative for the group. (int)
 	update_conditions: Update condition tracking. (None)
@@ -983,7 +983,7 @@ class CreatureGroup(object):
 		con_text = []
 		for creature_index, creature in enumerate(self.creatures, start = 1):
 			if creature.conditions:
-				con_comma = ', '.join([con[0] for con in self.conditions])
+				con_comma = ', '.join([con[0] for con in creature.conditions])
 				con_text.append(f'{creature_index}: {con_comma}')
 		return '; '.join(con_text)
 

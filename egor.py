@@ -1833,13 +1833,13 @@ class Egor(cmd.Cmd):
 			return
 		# Get the name or names of the combatant.
 		if isinstance(combatant, creature.CreatureGroup):
-			names = [creature.name.lower().replace(' ', '-') for creature in combatant.creatures]
+			names = [member.name.lower().replace(' ', '-') for member in combatant.creatures]
 		else:
 			names = [combatant.name.lower().replace(' ', '-')]
 		# Update the conditions for all names and all combatants.
 		for name in names:
-			for creature in self.init:
-				creature.update_conditions(name, timing)
+			for being in self.init:
+				being.update_conditions(name, timing)
 
 if __name__ == '__main__':
 	egor = Egor()

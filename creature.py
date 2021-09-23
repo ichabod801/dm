@@ -927,6 +927,8 @@ class CreatureGroup(object):
 	_ac_text: Text representation of individual ACs, as needed. (str)
 	_condition_text: Text representation of inidividual condtions. (str)
 	_hp_text: Text representation of the individual hit points. (str)
+	attack: Attack something using a proxy. (tuple of int, str)
+	auto_attack: Do all attacks for all creatures without a target. (str
 	combat_text: Text representation for the group's turn in combat. (str)
 	init: Roll initiative for the group. (int)
 	update_conditions: Update condition tracking. (None)
@@ -994,6 +996,27 @@ class CreatureGroup(object):
 			else:
 				hp_text.append(f'{creature.hp}/{creature.hp_max}')
 		return ', '.join(hp_text)
+
+	def attack(self, target, name, advantage = 0, temp_bonus = 0):
+		"""
+		Attack something using a proxy. (tuple of int, str)
+
+		Parameters:
+		target: The creature to attack. (Creature)
+		name: The name of the attack to use. (str)
+		advantage: The advantage/disadvantage for the attack. (int)
+		temp_bonus: A temporary bonus to the to hit roll. (int)
+		"""
+		return self.creatures[0].attack(target, name, advantage, temp_bonus)
+
+	def auto_attack(self):
+		"""Do all attacks for all creatures without a target. (str)"""
+		lines = []
+		for creature in self.creatures:
+			if creature.hp > 0:
+				lines.append(creature.name)
+				lines.append(creature.auto_attack())
+		return '\n\n'.join(lines)
 
 	def combat_text(self):
 		"""Text representation for the group's turn in combat. (str)"""

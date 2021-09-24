@@ -693,24 +693,31 @@ class Egor(cmd.Cmd):
 		The argument is the name of the creature or it's order in the initiative.
 		"""
 		# Find the creature.
-		creature = self.get_creature(arguments.lower(), 'combat')
+		dead = self.get_creature(arguments.lower(), 'combat')
 		for death_index, living in enumerate(self.init):
-			if living.name.lower() == creature.name.lower():
+			if living.name.lower() == dead.name.lower():
+				remove = True
+				break
+			elif isinstance(living, creature.CreatureGroup) and dead in living.creatures:
+				# Check for group death.
+				dead.hp, dead.hp_temp = 0, 0
+				remove = not sum([member.hp + member.hp_temp for member in living.creatures])
 				break
 		else:
 			# Print a warning if you can't find the creature.
 			print(self.voice['error-creature'].format(arguments))
 			return
 		# Remove the creature.
-		del self.init[death_index]
-		if death_index < self.init_count:
-			self.init_count -= 1
+		if remove:
+			del self.init[death_index]
+			if death_index < self.init_count:
+				self.init_count -= 1
 		# Update the experience points.
-		if self.xp_method == 'standard' and not creature.pc:
-			self.xp += creature.xp
+		if self.xp_method == 'standard' and not dead.pc:
+			self.xp += dead.xp
 		# Show the current status.
 		if quiet:
-			print(self.voice['confirm-kill'].format(creature.name))
+			print(self.voice['confirm-kill'].format(dead.name))
 		else:
 			self.combat_text()
 

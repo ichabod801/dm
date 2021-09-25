@@ -771,7 +771,7 @@ class Creature(object):
 		if hp < 0:
 			return self.heal(abs(hp))
 		for condition in self.conditions:
-			if condition.lower().startswith('conc'):
+			if condition[0].lower().startswith('conc'):
 				dc = max(10, hp // 2)
 				print(f'{self.name} needs to make a concentration check (con save) of DC {dc}.')
 		if self.hp_temp:

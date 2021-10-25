@@ -9,6 +9,7 @@ EMPHASIS_REGEX: A regex matching emphasized text in markdown. (Pattern)
 Classes:
 Attack: An attack used by a creature. (object)
 Creature: A creature for combat or information. (object)
+CreatureGroup: A grouping of similar creatures. (object)
 DummyNode: A fake header node for creating blank creatures. (namedtuple)
 ParsingError: A custom error from parsing problems. (Exception)
 """
@@ -770,7 +771,7 @@ class Creature(object):
 		if hp < 0:
 			return self.heal(abs(hp))
 		for condition in self.conditions:
-			if condition.lower().startswith('conc'):
+			if condition[0].lower().startswith('conc'):
 				dc = max(10, hp // 2)
 				print(f'{self.name} needs to make a concentration check (con save) of DC {dc}.')
 		if self.hp_temp:
@@ -912,6 +913,157 @@ class Creature(object):
 				if con_index not in drop:
 					new_conditions.append(condition)
 			self.conditions = new_conditions
+
+class CreatureGroup(object):
+	"""
+	A grouping of similar creatures. (object)
+
+	Attributes:
+	creature_name: The name of the individual creatures. (str)
+	creatures: The creatures in the group. (list of Creature)
+	name: The name of the group of creatures. (str)
+
+	Methods:
+	_ac_text: Text representation of individual ACs, as needed. (str)
+	_condition_text: Text representation of inidividual condtions. (str)
+	_hp_text: Text representation of the individual hit points. (str)
+	attack: Attack something using a proxy. (tuple of int, str)
+	auto_attack: Do all attacks for all creatures without a target. (str)
+	combat_text: Text representation for the group's turn in combat. (str)
+	init: Roll initiative for the group. (int)
+	update_conditions: Update condition tracking. (None)
+
+	Overridden Methods:
+	__init__
+	__repr__
+	__str__
+	"""
+
+	def __init__(self, creature_name, creatures):
+		"""
+		Set up the group of creatures. (None)
+
+		Parameters:
+		creature_name: The name of the individual creatures. (str)
+		creatures: The creatures in the group. (list of Creature)
+		"""
+		# Set the given attributes.
+		self.creature_name = creature_name
+		self.creatures = creatures
+		# Set the derived attributes
+		self.abilities = self.creatures[0].abilities
+		self.init_bonus = self.creatures[0].init_bonus
+		self.name = f'{self.creature_name}-group-of-{len(self.creatures)}'
+		# Set the default attributes.
+		self.initiative = 0
+
+	def __repr__(self):
+		"""Debugging text representation. (str)"""
+		return f'<CreatureGroup {self.name}, group of {len(self.creatures)}>'
+
+	def __str__(self):
+		"""Human readable text representation. (str)"""
+		text = f'{self.name}; AC {self._ac_text()}; HP {self._hp_text()}'
+		con_text = self._condition_text()
+		if con_text:
+			text = f'{text}; {con_text}'
+		return text
+
+	def _ac_text(self):
+		"""Text representation of individual ACs, as needed. (str)"""
+		acs = [creature.ac + creature.ac_mod for creature in self.creatures]
+		if len(set(acs)) > 1:
+			text = '/'.join([str(ac) for ac in acs])
+		else:
+			text = str(acs[0])
+		return text
+
+	def _condition_text(self):
+		"""Text representation of inidividual condtions. (str)"""
+		con_text = []
+		for creature_index, creature in enumerate(self.creatures, start = 1):
+			if creature.conditions:
+				con_comma = ', '.join([con[0] for con in creature.conditions])
+				con_text.append(f'{creature_index}: {con_comma}')
+		return '; '.join(con_text)
+
+	def _hp_text(self):
+		"""Text representation of the individual hit points. (str)"""
+		hp_text = []
+		for creature in self.creatures:
+			if creature.hp_temp:
+				hp_text.append(f'{creature.hp}+{creature.hp_temp}/{creature.hp_max}')
+			else:
+				hp_text.append(f'{creature.hp}/{creature.hp_max}')
+		return ', '.join(hp_text)
+
+	def attack(self, target, name, advantage = 0, temp_bonus = 0):
+		"""
+		Attack something using a proxy. (tuple of int, str)
+
+		Parameters:
+		target: The creature to attack. (Creature)
+		name: The name of the attack to use. (str)
+		advantage: The advantage/disadvantage for the attack. (int)
+		temp_bonus: A temporary bonus to the to hit roll. (int)
+		"""
+		return self.creatures[0].attack(target, name, advantage, temp_bonus)
+
+	def auto_attack(self):
+		"""Do all attacks for all creatures without a target. (str)"""
+		lines = []
+		for creature in self.creatures:
+			if creature.hp > 0:
+				lines.append(creature.name)
+				lines.append(creature.auto_attack())
+		return '\n\n'.join(lines)
+
+	def combat_text(self):
+		"""Text representation for the group's turn in combat. (str)"""
+		# Set up header.
+		lines = ['-------------------', self.name]
+		con_text = self._condition_text()
+		if con_text:
+			lines.append(con_text)
+		lines.append('-------------------')
+		# Get a sample creature
+		sample = self.creatures[0]
+		# Set up speed/hp section.
+		speed_text = f'Speed: {sample.speed} ft.'
+		if sample.other_speeds:
+			speed_text = f'{speed_text}; {sample.other_speeds}'
+		lines.append(speed_text)
+		lines.append(f'AC: {self._ac_text()}')
+		lines.append(f'HP: {self._hp_text()}')
+		lines.append('-------------------')
+		# Set up features:
+		if sample.features:
+			lines.append('Features: {}'.format(', '.join(title for title in sample.features)))
+		# Set up actions:
+		if sample.actions:
+			lines.append('Actions: {}'.format(', '.join(title for title in sample.actions)))
+		# Set up attacks:
+		lines.append('Attacks:')
+		for letter, attack in zip(sample.letters, sample.attacks.values()):
+			lines.append(f'   {letter}: {attack}')
+		# Combine the lines.
+		return '\n'.join(lines)
+
+	def init(self):
+		"""Roll initiative for the group. (int)"""
+		self.initiative = dice.d20() + self.init_bonus
+		return self.initiative
+
+	def update_conditions(self, combatant, end_point):
+		"""
+		Update condition timers, and remove finished conditions. (None)
+
+		Parameters:
+		combatant: The name of the current combatant. (str)
+		end_point: 's' for the start of the round, 'e' for the end. (str)
+		"""
+		for creature in self.creatures:
+			creature.update_conditions(combatant, end_point)
 
 # A fake header node for creating blank creatures.
 DummyNode = collections.namedtuple('DummyNode', ('name', 'children'))

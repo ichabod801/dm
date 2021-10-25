@@ -23,6 +23,7 @@ parse_cycle: Parse a text definition of a calendar cycle. (Cycle)
 
 import collections
 import functools
+import math
 import re
 
 class Alarm(object):
@@ -209,6 +210,10 @@ class Calendar(object):
 		self.formats.update(formats)
 		# Calculate the first year.
 		self.set_year(1)
+
+	def __repr__(self):
+		"""Debugging text representation. (str)"""
+		return f'<{self.__class__.__name__} with {len(self.months)} months and {len(self.cycles)} cycles>'
 
 	def days_in_year(self, year):
 		"""
@@ -538,6 +543,11 @@ class FractionalCycle(object):
 		self.keys['period'] = f'{low_name}-period'
 		self.keys['period-day'] = f'{low_name}-period-day'
 
+	def __repr__(self):
+		"""Debugging text representation. (str)"""
+		text = '<FractionalCycle {} with {} periods of {} days>'
+		return text.format(self.name, len(self.periods), self.period_length)
+
 	def advance_state(self, state, year = 0):
 		"""
 		Advance a cycle state by one day. (None)
@@ -591,8 +601,10 @@ class FractionalCycle(object):
 		if self.cycle_length >= year_table['year-length']:
 			cycle_count = year_table['year']
 		else:
-			cycle_count = int(previous_days / self.cycle_length) + 1
-		total_length = (int(previous_days / self.period_length) + 1) * self.period_length
+			#cycle_count = int(previous_days / self.cycle_length) + 1
+			cycle_count = math.ceil(previous_days / self.cycle_length)
+		#total_length = (int(previous_days / self.period_length) + 1) * self.period_length
+		total_length = math.ceil(previous_days / self.period_length) * self.period_length
 		overage = total_length - previous_days
 		# Figure out which period when over.
 		if year_table['year'] > 1 and overage >= 0.5:
@@ -674,6 +686,10 @@ class StaticCycle(object):
 		self.keys = {'number': f'{low_name}-number', 'day': f'{low_name}-day'}
 		self.keys['period'] = f'{low_name}-period'
 		self.keys['period-day'] = f'{low_name}-period-day'
+
+	def __repr__(self):
+		"""Debugging text representation. (str)"""
+		return f'<StaticCycle {self.name} with {len(self.periods)} periods>'
 
 	def advance_state(self, state, year = 0):
 		"""

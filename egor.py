@@ -693,24 +693,31 @@ class Egor(cmd.Cmd):
 		The argument is the name of the creature or it's order in the initiative.
 		"""
 		# Find the creature.
-		creature = self.get_creature(arguments.lower(), 'combat')
+		dead = self.get_creature(arguments.lower(), 'combat')
 		for death_index, living in enumerate(self.init):
-			if living.name.lower() == creature.name.lower():
+			if living.name.lower() == dead.name.lower():
+				remove = True
+				break
+			elif isinstance(living, creature.CreatureGroup) and dead in living.creatures:
+				# Check for group death.
+				dead.hp, dead.hp_temp = 0, 0
+				remove = not sum([member.hp + member.hp_temp for member in living.creatures])
 				break
 		else:
 			# Print a warning if you can't find the creature.
 			print(self.voice['error-creature'].format(arguments))
 			return
 		# Remove the creature.
-		del self.init[death_index]
-		if death_index < self.init_count:
-			self.init_count -= 1
+		if remove:
+			del self.init[death_index]
+			if death_index < self.init_count:
+				self.init_count -= 1
 		# Update the experience points.
-		if self.xp_method == 'standard' and not creature.pc:
-			self.xp += creature.xp
+		if self.xp_method == 'standard' and not dead.pc:
+			self.xp += dead.xp
 		# Show the current status.
 		if quiet:
-			print(self.voice['confirm-kill'].format(creature.name))
+			print(self.voice['confirm-kill'].format(dead.name))
 		else:
 			self.combat_text()
 
@@ -738,24 +745,14 @@ class Egor(cmd.Cmd):
 		Show the next person in the initiative queue. (n)
 		"""
 		# Update conditions (end of turn).
-		try:
-			combatant = self.init[self.init_count]
-		except IndexError:
-			print(self.voice['error-no-combat'])
-			return
-		name = combatant.name.lower().replace(' ', '-')
-		for creature in self.init:
-			creature.update_conditions(name, 'e')
+		self.update_conditions('e')
 		# Move to the next person.
 		self.init_count += 1
 		if self.init_count >= len(self.init):
 			self.init_count = 0
 			self.round += 1
 		# Update condtions start of turn.
-		combatant = self.init[self.init_count]
-		name = combatant.name.lower().replace(' ', '-')
-		for creature in self.init:
-			creature.update_conditions(name, 's')
+		self.update_conditions('s')
 		# Show the initiative queue.
 		self.combat_text()
 
@@ -1436,6 +1433,7 @@ class Egor(cmd.Cmd):
 			# Check for groups.
 			if 'g' in count:
 				group = True
+				group_list = []
 				count = count.replace('g', '')
 			else:
 				group = False
@@ -1467,11 +1465,12 @@ class Egor(cmd.Cmd):
 				if not group:
 					npc.init()
 					self.init.append(npc)
+				else:
+					group_list.append(npc)
 				self.combatants[npc.name.lower()] = npc
 			# Handle groups
 			if group:
-				sub_name = f'{name}-group-of-{count}'
-				npc = data.copy(sub_name, average_hp = True)
+				npc = creature.CreatureGroup(name, group_list)
 				npc.init()
 				self.init.append(npc)
 
@@ -1486,33 +1485,33 @@ class Egor(cmd.Cmd):
 		creature_text: The identifier of the creature. (str)
 		context: How narrow/broad the search should be. (str)
 		"""
-		creature = creature_text.strip().lower().replace(' ', '-')
+		possible = creature_text.strip().lower().replace(' ', '-')
 		# Check the combat containers
-		if creature in self.combatants:
-			creature = self.combatants[creature.lower()]
-		elif creature.isdigit():
+		if possible in self.combatants:
+			possible = self.combatants[possible.lower()]
+		elif possible.isdigit():
 			try:
-				creature = self.init[int(creature) - 1]
+				possible = self.init[int(possible) - 1]
 			except IndexError:
 				if self.init:
 					raise CreatureError(self.voice['error-creature-ndx'])
 				else:
 					raise CreatureError(self.voice['error-no-combat'])
 		# Check non-combat containers outside of combat.
-		elif context == 'open' and creature in self.pcs:
-			creature = self.pcs[creature.lower()]
-		elif context == 'open' and creature in self.zoo:
-			creature = self.zoo[creature.lower()]
+		elif context == 'open' and possible in self.pcs:
+			possible = self.pcs[possible.lower()]
+		elif context == 'open' and possible in self.zoo:
+			possible = self.zoo[possible.lower()]
 		# Warn on not finding the creature.
 		else:
 			raise CreatureError(self.voice['error-creature'].format(creature_text))
 		# Handle ids within groups.
-		if 'group-of' in creature.name:
-			count = creature.name.split('-')[-1]
-			name = creature.name[:creature.name.index('-group')]
+		if isinstance(possible, creature.CreatureGroup):
+			count = possible.name.split('-')[-1]
+			name = possible.name[:possible.name.index('-group')]
 			which = input(self.voice['query-creature'].format(name, count))
-			creature = self.get_creature(f'{name}-{which}')
-		return creature
+			possible = self.get_creature(f'{name}-{which}')
+		return possible
 
 	def get_encounter(self):
 		"""
@@ -1825,6 +1824,29 @@ class Egor(cmd.Cmd):
 			else:
 				pc.init()
 			self.init.append(pc)
+
+	def update_conditions(self, timing):
+		"""
+		Update conditions on creatures. (None)
+
+		Parameters:
+		timing: 'e' for end of turn, 's' for start of turn. (str)
+		"""
+		# Get the combatant, checking for combat having started.
+		try:
+			combatant = self.init[self.init_count]
+		except IndexError:
+			print(self.voice['error-no-combat'])
+			return
+		# Get the name or names of the combatant.
+		if isinstance(combatant, creature.CreatureGroup):
+			names = [member.name.lower().replace(' ', '-') for member in combatant.creatures]
+		else:
+			names = [combatant.name.lower().replace(' ', '-')]
+		# Update the conditions for all names and all combatants.
+		for name in names:
+			for being in self.init:
+				being.update_conditions(name, timing)
 
 if __name__ == '__main__':
 	egor = Egor()

@@ -1453,12 +1453,20 @@ class Egor(cmd.Cmd):
 					data.init_bonus = int(init)
 				else:
 					continue
+			# Check for previous combatants with the same name.
+			old_names = [old_name for old_name in self.combatants if old_name.startswith(name.lower())]
+			if old_names:
+				tails = [old_name.split('-')[-1] for old_name in old_names]
+				tails = [int(tail) for tail in tails if tail.isdigit()]
+				mod = max(tails) + 1 if tails else 1
+			else:
+				mod = 1 if count > 1 else 0
 			# Create and roll initiative for the bad guys.
 			average_hp = self.average_hp or (group and self.group_hp)
 			for bad_guy in range(count):
 				# Number the bad guys if there's more than one.
-				if count > 1:
-					sub_name = f'{name}-{bad_guy + 1}'
+				if mod:
+					sub_name = f'{name}-{bad_guy + mod}'
 				else:
 					sub_name = name
 				npc = data.copy(sub_name, average_hp)

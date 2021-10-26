@@ -178,7 +178,7 @@ class Attack(object):
 					total += sub_total
 			if target is not None:
 				target.hit(total)
-				print(f'{target.name.capitalize()} has {target.hp} hit points left.')
+				print(f'{target.name.title()} has {target.hp} hit points left.')
 			# Create the text description.
 			if target is None:
 				hit_type = 'Critical hit' if hit_roll == 20 else f'Hits AC {hit_roll + total_bonus}'

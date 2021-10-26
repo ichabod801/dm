@@ -380,7 +380,7 @@ class Egor(cmd.Cmd):
 		"""
 		docs = [doc for doc in (self.campaign, self.meta) if doc is not None]
 		if docs:
-			self.markdown_search(arguments, self.campaign, self.meta)
+			self.markdown_search(arguments, *docs)
 		else:
 			print(self.voice['error-no-campaign'])
 
@@ -1584,7 +1584,7 @@ class Egor(cmd.Cmd):
 		Paramters:
 		meta: A flag for loading the meta campaign. (bool)
 		"""
-		folder = self.meta_folder if meta else self.campaign folder
+		folder = self.meta_folder if meta else self.campaign_folder
 		campaign = markdown.SRD(os.path.join(self.location, folder))
 		# Set the data from the SRD.
 		self.tables = self.srd.tables.copy()
@@ -1677,15 +1677,15 @@ class Egor(cmd.Cmd):
 		documents: The documents to search. (tuple of HeaderNode)
 		"""
 		# Search by regex or text as indicated.
-		search_method = document.header_search
+		search_method = 'header_search'
 		if arguments.startswith('$'):
 			arguments = re.compile(arguments[1:], re.IGNORECASE)
 		elif arguments.startswith('+'):
 			arguments = re.compile(arguments[1:], re.IGNORECASE)
-			search_method = document.text_search
+			search_method = 'text_search'
 		matches = []
 		for document in documents:
-			matches.extend(search_method(arguments))
+			matches.extend(getattr(document, search_method)(arguments))
 		if matches:
 			# If necessary, get the player's choice of matches.
 			if len(matches) == 1:

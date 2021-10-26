@@ -40,6 +40,7 @@ class Egor(cmd.Cmd):
 	auto_save: A flag for requesting a save every 30 minutes. (bool)
 	auto_tag: The tags to automatically apply to every note. (list of str)
 	average_hp: A flag for using average HP for NPCs/monsters. (bool)
+	calendar: The calendar loaded from the campaign or meta-campaign. (bool)
 	campaign: The loaded campaign information. (SRD)
 	campaign_folder: A path to the folder with the campaign files. (str)
 	changes: A flag for changes in the game state. (bool)
@@ -51,6 +52,8 @@ class Egor(cmd.Cmd):
 	init: The initiative order for the current combat. (list of Creature)
 	init_count: The current actor in combat. (int)
 	location: The file system location of this file. (str)
+	meta: The loaded meta-campaign information. (SRD)
+	meat_folder: The path to the folder with the meta-campaign files. (str)
 	notes: Notes stored by the DM. (list of str)
 	pc_data: Player character mockups made in the interface. (dict)
 	pcs: The player characters in the campaign. (dict of str: Creature)
@@ -375,7 +378,11 @@ class Egor(cmd.Cmd):
 		a +, it treats the rest of the argument as a regular expression, and searches 
 		the document text for that
 		"""
-		self.markdown_search(arguments, self.campaign)
+		docs = [doc for doc in (self.campaign, self.meta) if doc is not None]
+		if docs:
+			self.markdown_search(arguments, self.campaign, self.meta)
+		else:
+			print(self.voice['error-no-campaign'])
 
 	def do_condition(self, arguments):
 		"""
@@ -429,13 +436,13 @@ class Egor(cmd.Cmd):
 		# Check for bad formats or no calendar.
 		if self.campaign is None:
 			print(self.voice['error-no-campaign'])
-		elif self.campaign.calendar is None:
+		elif self.calendar is None:
 			print(self.voice['error-no-calendar'])
-		elif format_name not in self.campaign.calendar.formats:
+		elif format_name not in self.calendar.formats:
 			print(self.voice['error-date-format'].format(arguments))
 		else:
 			# Print the date.
-			print(self.campaign.calendar.date(self.time.day, format_name))
+			print(self.calendar.date(self.time.day, format_name))
 
 	def do_day(self, arguments):
 		"""
@@ -452,8 +459,8 @@ class Egor(cmd.Cmd):
 		self.time += gtime.Time(day = days)
 		# Check for year change.
 		if last_year != self.time.year:
-			self.campaign.calendar.set_year(self.time.year)
-			gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
+			self.calendar.set_year(self.time.year)
+			gtime.Time.year_length = self.calendar.current_year['year-length']
 		# Set to morning.
 		self.time.hour = 6
 		self.time.minute = 0
@@ -969,6 +976,8 @@ class Egor(cmd.Cmd):
 		* climate: Sets the default climate for the weather command.
 		* group-hp: Assigns the average hit points to all members of groups in the
 			initiative order.
+		* meta: Sets the meta campaign folder. Works as campaign, but allows shared
+			documents across campaigns.
 		* season: Sets the default season for the weather command.
 		* time-var: Changes or adds time variables (see the time command). Follow
 			time-var with a time variable name and a time specification, such as
@@ -1005,6 +1014,11 @@ class Egor(cmd.Cmd):
 				self.set_changes()
 			else:
 				print(self.voice['error-climate'].format(setting))
+		elif option == 'meta':
+			self.meta_folder = setting
+			self.load_campaign(meta = True)
+			print(self.voice['confirm-campaign'].format(self.meta_folder))
+			self.set_changes()
 		elif option == 'season':
 			if setting.lower() in ('spring', 'summer', 'winter', 'fall'):
 				self.season = setting.lower()
@@ -1153,6 +1167,9 @@ class Egor(cmd.Cmd):
 			# Save the loaded campaign, if any.
 			if self.campaign_folder:
 				data_file.write('campaign: {}\n'.format(self.campaign_folder))
+			# Save the loaded meta-campaign, if any.
+			if self.meta_folder:
+				data_file.write('meta: {}\n'.format(self.meta_folder))
 			# Save the system voice.
 			data_file.write('voice: {}\n'.format(self.voice['__name__']))
 		# Determine where the campaign data should be stored.
@@ -1341,8 +1358,8 @@ class Egor(cmd.Cmd):
 			self.set_changes()
 			# Check for year change.
 			if last_year != self.time.year:
-				self.campaign.calendar.set_year(self.time.year)
-				gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
+				self.calendar.set_year(self.time.year)
+				gtime.Time.year_length = self.calendar.current_year['year-length']
 		print(self.time)
 		if words:
 			self.alarm_check(time_spec)
@@ -1560,17 +1577,39 @@ class Egor(cmd.Cmd):
 		rando = random.random() if self.random_tiebreak else 0
 		return (init, dex, rando)
 
-	def load_campaign(self):
-		"""Load stored campaign data. (None)"""
-		self.campaign = markdown.SRD(os.path.join(self.location, self.campaign_folder))
+	def load_campaign(self, meta = False):
+		"""
+		Load stored campaign data. (None)
+
+		Paramters:
+		meta: A flag for loading the meta campaign. (bool)
+		"""
+		folder = self.meta_folder if meta else self.campaign folder
+		campaign = markdown.SRD(os.path.join(self.location, folder))
+		# Set the data from the SRD.
 		self.tables = self.srd.tables.copy()
-		self.tables.update(self.campaign.tables)
 		self.zoo = self.srd.zoo.copy()
-		self.zoo.update(self.campaign.zoo)
-		self.pcs = self.campaign.pcs
-		if self.campaign.calendar:
-			self.campaign.calendar.set_year(self.time.year)
-			gtime.Time.year_length = self.campaign.calendar.current_year['year-length']
+		self.pcs = self.pc_data.copy()
+		# Update the SRD data based on what was just loaded.
+		self.tables.update(campaign.tables)
+		self.zoo.update(campaign.zoo)
+		self.pcs.update(campaign.pcs)
+		# Update the combined data based on what was not overwritten by the current load.
+		untouched = self.campaign if meta else self.meta
+		if untouched:
+			self.tables.update(untouched.tables)
+			self.zoo.update(untouched.zoo)
+			self.pcs.update(untouched.pcs)
+		# Update the calendar
+		if campaign.calendar:
+			self.calendar = campaign.calendar
+			self.calendar.set_year(self.time.year)
+			gtime.Time.year_length = self.calendar.current_year['year-length']
+		# Store the loaded information correctly
+		if meta:
+			self.meta = campaign
+		else:
+			self.campaign = campaign
 
 	def load_data(self):
 		"""Load any stored state data. (None)"""
@@ -1580,6 +1619,8 @@ class Egor(cmd.Cmd):
 				tag, data = line.split(':', 1)
 				if tag == 'campaign':
 					self.campaign_folder = data.strip()
+				elif tag == 'meta':
+					self.meta_folder = data.strip()
 				elif tag == 'voice':
 					self.voice = getattr(voice, data.strip().upper())
 					self.prompt = self.voice['prompt']
@@ -1627,23 +1668,24 @@ class Egor(cmd.Cmd):
 				elif tag == 'xp-method':
 					self.xp_method = data.strip()
 
-	def markdown_search(self, arguments, document):
+	def markdown_search(self, arguments, *documents):
 		"""
 		Search a markdown document tree. (None)
 
 		Parameters:
 		arguments: The user's search terms. (str)
-		document: The document to search. (HeaderNode)
+		documents: The documents to search. (tuple of HeaderNode)
 		"""
 		# Search by regex or text as indicated.
+		search_method = document.header_search
 		if arguments.startswith('$'):
-			regex = re.compile(arguments[1:], re.IGNORECASE)
-			matches = document.header_search(regex)
+			arguments = re.compile(arguments[1:], re.IGNORECASE)
 		elif arguments.startswith('+'):
-			regex = re.compile(arguments[1:], re.IGNORECASE)
-			matches = document.text_search(regex)
-		else:
-			matches = document.header_search(arguments)
+			arguments = re.compile(arguments[1:], re.IGNORECASE)
+			search_method = document.text_search
+		matches = []
+		for document in documents:
+			matches.extend(search_method(arguments))
 		if matches:
 			# If necessary, get the player's choice of matches.
 			if len(matches) == 1:
@@ -1772,6 +1814,8 @@ class Egor(cmd.Cmd):
 		self.auto_save = True
 		self.auto_tag = ''
 		self.average_hp = False
+		self.calendar = None
+		self.campaign = None
 		self.campaign_folder = ''
 		self.climate = 'temperate'
 		self.combatants = {}
@@ -1780,6 +1824,8 @@ class Egor(cmd.Cmd):
 		self.encounters = {}
 		self.init = []
 		self.init_count = -1
+		self.meta = None
+		self.meta_folder = ''
 		self.notes = []
 		self.pc_data = {}
 		self.pcs = {}
@@ -1802,9 +1848,8 @@ class Egor(cmd.Cmd):
 			pass
 		if self.campaign_folder:
 			self.load_campaign()
-			# Restore any overwritten pcs.
-			for pc_data in self.pc_data.values():
-				self.new_pc(pc_data)
+		if self.meta_folder:
+			self.load_campaign(meta = True)
 		# Track changes.
 		self.changes = False
 		# Formatting.

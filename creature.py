@@ -856,6 +856,10 @@ class Creature(object):
 		lines.append('| {} |'.format(' | '.join(score_bits)))
 		lines.append('')
 		# Features Section.
+		prof_saves = {attr: bonus for attr, bonus in self.saves.items() if bonus != self.bonuses[attr]}
+		if prof_saves:
+			save_bits = [f'{attr.capitalize()} {bonus:+}' for attr, bonus in prof_saves.items()]
+			lines.append('**Saves** {}'.format(', '.join(save_bits)))
 		lines.append(f'**Senses** {self.senses}')
 		lines.append(f'**Languages** {self.languages}')
 		if self.cr >= 1:

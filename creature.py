@@ -177,7 +177,7 @@ class Attack(object):
 				else:
 					total += sub_total
 			if target is not None:
-				target.hp = max(0, target.hp - total)
+				target.hit(total)
 				print(f'{target.name.capitalize()} has {target.hp} hit points left.')
 			# Create the text description.
 			if target is None:

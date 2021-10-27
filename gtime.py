@@ -241,7 +241,7 @@ class Calendar(object):
 		day: The day of the current year. (int)
 		format_name: The name of the format to use. (str)
 		"""
-		return self.formats[format_name].format(**self.current_year[day])
+		return self.formats[format_name].format(year = self.current_year['year'], **self.current_year[day])
 
 	def set_year(self, year):
 		"""

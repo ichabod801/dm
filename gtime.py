@@ -1050,7 +1050,7 @@ def parse_calendar(root):
 			for line in node.children[0].lines:
 				if '**' in line:
 					blank, name, format_str = line.split('**')
-					formats[name] = format_str
+					formats[name] = format_str.strip()
 	# Set up the calendar.
 	if calendar_type == 'fractional':
 		calendar = FractionalCalendar(days_in_year, months, overage_month, cycles, formats)

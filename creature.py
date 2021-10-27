@@ -177,8 +177,8 @@ class Attack(object):
 				else:
 					total += sub_total
 			if target is not None:
-				target.hp = max(0, target.hp - total)
-				print(f'{target.name.capitalize()} has {target.hp} hit points left.')
+				target.hit(total)
+				print(f'{target.name.title()} has {target.hp} hit points left.')
 			# Create the text description.
 			if target is None:
 				hit_type = 'Critical hit' if hit_roll == 20 else f'Hits AC {hit_roll + total_bonus}'
@@ -308,7 +308,7 @@ class Creature(object):
 		'deception': 'cha', 'history': 'int', 'insight': 'wis', 'intimidation': 'cha', 
 		'investigation': 'int', 'medicine': 'wis', 'nature': 'int', 'perception': 'wis', 
 		'performance': 'cha', 'persuasion': 'cha', 'religion': 'int', 'sleight-of-hand': 'dex', 
-		'stealth': 'dex', 'suvival': 'wis'}
+		'stealth': 'dex', 'survival': 'wis'}
 	two_stars = {'Armor Class': '_parse_ac', 'Challenge': '_parse_challenge', 'Hit Points': '_parse_hp', 
 		'Languages': '_parse_languages', 'Saving Throws': '_parse_saves', 'Senses': '_parse_senses', 
 		'Skills': '_parse_skills', 'Speed': '_parse_speed'}
@@ -856,6 +856,17 @@ class Creature(object):
 		lines.append('| {} |'.format(' | '.join(score_bits)))
 		lines.append('')
 		# Features Section.
+		prof_saves = {attr: bonus for attr, bonus in self.saves.items() if bonus != self.bonuses[attr]}
+		if prof_saves:
+			save_bits = [f'{attr.capitalize()} {bonus:+}' for attr, bonus in prof_saves.items()]
+			lines.append('**Saves** {}'.format(', '.join(save_bits)))
+		prof_skills = {}
+		for skill, bonus in self.skills.items():
+			if bonus != self.bonuses[Creature.skill_abilities[skill]]:
+				prof_skills[skill] = bonus
+		if prof_skills:
+			skill_bits = [f'{skill.capitalize()} {bonus:+}' for skill, bonus in prof_skills.items()]
+			lines.append('**Skills** {}'.format(', '.join(skill_bits)))
 		lines.append(f'**Senses** {self.senses}')
 		lines.append(f'**Languages** {self.languages}')
 		if self.cr >= 1:

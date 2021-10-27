@@ -241,7 +241,7 @@ class Calendar(object):
 		day: The day of the current year. (int)
 		format_name: The name of the format to use. (str)
 		"""
-		return self.formats[format_name].format(**self.current_year[day])
+		return self.formats[format_name].format(year = self.current_year['year'], **self.current_year[day])
 
 	def set_year(self, year):
 		"""
@@ -1050,7 +1050,7 @@ def parse_calendar(root):
 			for line in node.children[0].lines:
 				if '**' in line:
 					blank, name, format_str = line.split('**')
-					formats[name] = format_str
+					formats[name] = format_str.strip()
 	# Set up the calendar.
 	if calendar_type == 'fractional':
 		calendar = FractionalCalendar(days_in_year, months, overage_month, cycles, formats)
